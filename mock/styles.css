@@ -27,9 +27,11 @@
   --cat-repaid:        #4a3aa7;  /* 返済済み */
   --cat-debt:          #3b82f6;  /* 負債・残債 */
 
-  /* 損益色（文字にのみ使用）— 日本式 */
-  --pl-gain:           #c62828;  /* 含み益 = 赤 */
-  --pl-loss:           #1c5cab;  /* 含み損 = 青 */
+  /* 損益色 — 日本式（赤=益 / 青=損）。文字とハッチ塗りの両方で使う */
+  --pl-gain:           #c62828;  /* 含み益 = 赤（文字） */
+  --pl-loss:           #1c5cab;  /* 含み損 = 青（文字） */
+  --pl-gain-fill:      #c62828;  /* 含み益 = 赤（面・ハッチ） */
+  --pl-loss-fill:      #1c5cab;  /* 含み損 = 青（面・ハッチ） */
 
   --focus:             #2a78d6;
   --radius:            10px;
@@ -55,6 +57,8 @@
 
     --pl-gain:         #f87171;
     --pl-loss:         #6da7ec;
+    --pl-gain-fill:    #d64545;
+    --pl-loss-fill:    #4d97ee;
 
     --focus:           #5598e7;
   }
@@ -242,6 +246,25 @@ td .bar-track { min-width: 0; }
 .seg-repaid { background: var(--cat-repaid); }
 .seg-debt   { background: var(--cat-debt); }
 .seg-rest   { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--border); }
+
+/* 損益セグメント。ベタ塗り＝元本/カテゴリ、斜めハッチ＝損益 という区別。
+   色覚多様性でもダークモードでも、形で見分けられるようにするため。 */
+.seg-gain, .seg-loss {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255,255,255,.42) 0 3px,
+    rgba(255,255,255,0)   3px 7px
+  );
+}
+.seg-gain { background-color: var(--pl-gain-fill); }
+.seg-loss { background-color: var(--pl-loss-fill); }
+
+.swatch-gain, .swatch-loss {
+  background-image: repeating-linear-gradient(
+    135deg, rgba(255,255,255,.42) 0 2px, rgba(255,255,255,0) 2px 5px);
+}
+.swatch-gain { background-color: var(--pl-gain-fill); }
+.swatch-loss { background-color: var(--pl-loss-fill); }
 
 .bar-total { font-size: 13px; font-weight: 700; white-space: nowrap; }
 .bar-total small { display: block; font-weight: 400; color: var(--text-muted); font-size: 11px; }

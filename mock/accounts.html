@@ -19,17 +19,19 @@
   <section>
     <h2>有価証券</h2>
     <p class="sec-note">
-      資産クラス別・評価額ベース。棒の長さは評価額、縦線は取得原価。
+      資産クラス別・評価額ベース。<b>緑＝元本のうち失われていない部分</b>、
+      斜めハッチが損益です。含み益なら元本の右に赤が積み増され、
+      含み損なら元本が青の分だけ削られます。棒の全長は取得原価と評価額の大きい方。
       「その他」は暗号資産・金・銀などの現物資産をまとめる器です。
       外貨は元通貨で保持し、1&nbsp;USD&nbsp;=&nbsp;<span id="rate" class="num"></span>&nbsp;円で換算しています。
     </p>
     <div class="card table-wrap">
       <table id="sec"></table>
       <div class="legend">
-        <span><i class="swatch" style="background:var(--cat-equity)"></i>評価額</span>
-        <span><i class="swatch swatch-line"></i>取得原価</span>
-        <span><b class="legend-text gain">+1,234</b>&nbsp;含み益</span>
-        <span><b class="legend-text loss">▲1,234</b>&nbsp;含み損</span>
+        <span><i class="swatch" style="background:var(--cat-equity)"></i>元本（失われていない部分）</span>
+        <span><i class="swatch swatch-gain"></i>含み益</span>
+        <span><i class="swatch swatch-loss"></i>含み損</span>
+        <span style="color:var(--text-muted)">ベタ塗り＝元本 ／ 斜めハッチ＝損益</span>
       </div>
     </div>
   </section>
@@ -47,7 +49,8 @@
   <section>
     <h2>負債</h2>
     <p class="sec-note">
-      ローン単位で保持。棒の全長が当初借入額、その内訳が返済済みと残債です。
+      ローン単位で保持。<b>棒の全長は各ローンの当初借入額</b>で、どの行も同じ長さです。
+      ローンの規模ではなく返済の進み具合を横並びで比較できます（規模は当初借入額の列で読めます）。
       不動産ローンは合計1行のみ再掲しています（物件別の内訳は
       <a href="realestate.html">② 不動産</a>）。
     </p>
@@ -56,7 +59,7 @@
       <div class="legend">
         <span><i class="swatch" style="background:var(--cat-repaid)"></i>返済済み</span>
         <span><i class="swatch" style="background:var(--cat-debt)"></i>残債</span>
-        <span style="color:var(--text-muted)">棒の全長 ＝ 当初借入額</span>
+        <span style="color:var(--text-muted)">棒の全長 ＝ そのローンの当初借入額（＝100%）</span>
       </div>
     </div>
   </section>
@@ -100,7 +103,7 @@
       if (!s) {
         return '<tr><td>' + name + '</td>' +
           '<td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td>' +
-          '<td>' + A.valueBar(0, secMax, null, "") + '</td></tr>';
+          '<td>' + A.plBar(0, 0, secMax, "") + '</td></tr>';
       }
       const native = s.currency === "JPY" ? "" :
         '<small style="color:var(--text-muted)"> ' + s.currency + " " + A.plain(s.marketValue) + "</small>";
@@ -110,16 +113,15 @@
         '<td class="n num">' + A.plain(s.valueJPY) + native + '</td>' +
         '<td class="n">' + A.plHTML(s.plJPY) + '</td>' +
         '<td class="n">' + A.plPctHTML(s.plJPY, s.costJPY) + '</td>' +
-        '<td>' + A.valueBar(s.valueJPY, secMax, s.costJPY,
-            REGION[region] + " " + cls + "<br>評価額 <b>" + A.yen(s.valueJPY) +
-            "</b><br>取得原価 " + A.yen(s.costJPY)) + '</td>' +
+        '<td>' + A.plBar(s.costJPY, s.valueJPY, secMax,
+            REGION[region] + " " + cls) + '</td>' +
       '</tr>';
     }).join("");
   });
   document.getElementById("sec").innerHTML =
     '<thead><tr><th>クラス</th><th class="n">取得原価</th><th class="n">評価額</th>' +
     '<th class="n">含み損益</th><th class="n">損益率</th>' +
-    '<th class="bar-col">評価額（最大クラス＝100%）</th></tr></thead>' +
+    '<th class="bar-col">元本と含み損益（最大クラス＝100%）</th></tr></thead>' +
     '<tbody>' + secBody +
     '<tr class="total-row"><td>合計</td>' +
       '<td class="n num">' + A.plain(A.SEC_COST) + '</td>' +
@@ -138,13 +140,13 @@
       '<tr><td>' + d.bank + '</td>' +
       '<td class="n num">' + A.plain(d.amount) + '</td>' +
       '<td class="n num">' + A.pct(d.amount, A.DEPOSITS) + '</td>' +
-      '<td>' + A.valueBar(d.amount, A.DEPOSITS, null,
+      '<td>' + A.valueBar(d.amount, A.DEPOSITS,
           d.bank + "<br><b>" + A.yen(d.amount) + "</b><br>全体の " +
           A.pct(d.amount, A.DEPOSITS)) + '</td></tr>'
     ).join("") +
     '<tr class="total-row"><td>合計</td><td class="n num">' + A.plain(A.DEPOSITS) +
       '</td><td class="n num">100.0%</td>' +
-      '<td>' + A.valueBar(A.DEPOSITS, A.DEPOSITS, null, "預貯金合計<br><b>" +
+      '<td>' + A.valueBar(A.DEPOSITS, A.DEPOSITS, "預貯金合計<br><b>" +
           A.yen(A.DEPOSITS) + "</b>") + '</td></tr></tbody>';
 
   /* ================= 負債 =================
@@ -161,13 +163,11 @@
     principal: A.RE.principal, repaid: A.RE.cumulativeRepaid, balance: A.RE.balance,
     link: "realestate.html"
   });
-  const debtMax = Math.max.apply(null, debtRows.map(r => r.principal));
-
   document.getElementById("debt").innerHTML =
     '<thead><tr><th>借入</th><th class="n">金利</th><th class="n">月返済額</th>' +
     '<th class="n">当初借入額</th><th class="n">返済済み</th><th class="n">残債</th>' +
     '<th class="n">返済進捗</th>' +
-    '<th class="bar-col">当初借入額の内訳（最大ローン＝100%）</th></tr></thead><tbody>' +
+    '<th class="bar-col">返済進捗（各ローンの当初借入額＝100%）</th></tr></thead><tbody>' +
     debtRows.map(r =>
       '<tr><td><b>' + r.name + '</b>' +
         (r.link ? ' <a href="' + r.link + '" style="font-size:11px">詳細 →</a>' : "") +
@@ -181,7 +181,7 @@
       '<td>' + A.stackedBar([
         { cls: "seg-repaid", value: r.repaid,  label: r.name + " 返済済み" },
         { cls: "seg-debt",   value: r.balance, label: r.name + " 残債" }
-      ], debtMax) + '</td></tr>'
+      ], r.principal) + '</td></tr>'
     ).join("") +
     '<tr class="total-row"><td>総負債</td><td></td>' +
       '<td class="n num">' + A.plain(A.sum(debtRows, r => r.monthly)) + '</td>' +
@@ -189,7 +189,10 @@
       '<td class="n num">' + A.plain(A.sum(debtRows, r => r.repaid)) + '</td>' +
       '<td class="n num">' + A.plain(A.TOTAL_DEBT) + '</td>' +
       '<td class="n num">' + A.pct(A.sum(debtRows, r => r.repaid), A.sum(debtRows, r => r.principal)) + '</td>' +
-      '<td></td></tr></tbody>';
+      '<td>' + A.stackedBar([
+        { cls: "seg-repaid", value: A.sum(debtRows, r => r.repaid),  label: "全ローン 返済済み" },
+        { cls: "seg-debt",   value: A.TOTAL_DEBT,                    label: "全ローン 残債" }
+      ], A.sum(debtRows, r => r.principal)) + '</td></tr></tbody>';
 
   A.initTooltip();
 })();

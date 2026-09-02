@@ -107,21 +107,34 @@
     return '<div class="bar-track">' + html + rest + "</div>";
   }
 
-  /** 単色横棒。refValue を渡すと取得原価の参照線を同一スケール上に描く */
-  function valueBar(value, max, refValue, tip) {
+  /** 単色横棒（預貯金など、損益の概念がないもの） */
+  function valueBar(value, max, tip) {
     const w = max === 0 ? 0 : value / max;
-    const rest = 1 - w;
-    let ref = "";
-    if (refValue != null && max > 0) {
-      const p = Math.min(100, refValue / max * 100);
-      ref = '<div class="ref-mark" style="left:' + p + '%" data-tip="取得原価<br><b>' +
-            yen(refValue) + '</b>"></div>';
-    }
     return '<div class="bar-track">' +
       '<div class="seg seg-equity" style="flex:' + w + ' 0 0" data-tip="' + tip + '"></div>' +
-      (rest > 0 ? '<div class="seg seg-rest" style="flex:' + rest + ' 0 0"></div>' : "") +
-      ref +
+      (1 - w > 0 ? '<div class="seg seg-rest" style="flex:' + (1 - w) + ' 0 0"></div>' : "") +
       "</div>";
+  }
+
+  /**
+   * 含み損益バー。緑 = 元本のうち失われていない部分。
+   *   含み益: [緑 取得原価][赤ハッチ 含み益]  → 棒の全長 = 評価額
+   *   含み損: [緑 評価額  ][青ハッチ 含み損]  → 棒の全長 = 取得原価
+   * どちらも棒の全長は max(取得原価, 評価額)。max を渡して行間で同じ縮尺にする。
+   */
+  function plBar(cost, value, max, label) {
+    if (cost <= 0 && value <= 0) {
+      return '<div class="bar-track"><div class="seg seg-rest" style="flex:1 0 0"></div></div>';
+    }
+    const gain = value - cost;
+    const base = Math.min(cost, value);
+    const segs = [{
+      cls: "seg-equity", value: base,
+      label: label + "<br>" + (gain >= 0 ? "取得原価" : "評価額（残っている元本）")
+    }];
+    if (gain > 0) segs.push({ cls: "seg-gain", value: gain,  label: label + "<br>含み益" });
+    if (gain < 0) segs.push({ cls: "seg-loss", value: -gain, label: label + "<br>含み損" });
+    return stackedBar(segs, max);
   }
 
   /* ---------- サイドバー ---------- */
@@ -178,6 +191,6 @@
     D, RE, SEC, SEC_VALUE, SEC_COST, SEC_PL, DEPOSITS,
     FINANCIAL_ASSETS, OTHER_DEBT, TOTAL_DEBT, CF_TOTAL,
     yen, plain, pl, plHTML, plPctHTML, pct, sum, cashflow,
-    stackedBar, valueBar, sidebar, initTooltip
+    stackedBar, valueBar, plBar, sidebar, initTooltip
   };
 })();
