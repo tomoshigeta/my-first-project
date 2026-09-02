@@ -73,14 +73,21 @@ window.ASSET_DATA = {
     }
   ],
 
-  /* ---------- 有価証券（資産クラス別・評価額ベース） ---------- */
+  /* ---------- 有価証券（資産クラス別・評価額ベース） ----------
+     assetClass は 株 / 債券 / 投資信託 / その他 の4種類のみ。
+     「その他」は暗号資産・金・銀などの現物資産をまとめる器です。
+     国内・海外とも4行を常に表示するため、残高ゼロでも行は消しません。 */
   securities: [
-    { region: "domestic", assetClass: "株",     currency: "JPY", cost: 2000000, marketValue: 5000000 },
-    { region: "domestic", assetClass: "債券",   currency: "JPY", cost: 2700000, marketValue: 2500000 },
+    { region: "domestic", assetClass: "株",       currency: "JPY", cost: 2000000, marketValue: 5000000 },
+    { region: "domestic", assetClass: "債券",     currency: "JPY", cost: 2700000, marketValue: 2500000 },
     { region: "domestic", assetClass: "投資信託", currency: "JPY", cost: 1300000, marketValue: 1500000 },
-    { region: "overseas", assetClass: "株",     currency: "USD", cost:   20000, marketValue:   32000 },
-    { region: "overseas", assetClass: "債券",   currency: "USD", cost:   18000, marketValue:   16000 },
-    { region: "overseas", assetClass: "投資信託", currency: "USD", cost:    8000, marketValue:    9500 }
+    { region: "domestic", assetClass: "その他",   currency: "JPY", cost:  800000, marketValue: 1200000,
+      note: "金地金" },
+    { region: "overseas", assetClass: "株",       currency: "USD", cost:   20000, marketValue:   32000 },
+    { region: "overseas", assetClass: "債券",     currency: "USD", cost:   18000, marketValue:   16000 },
+    { region: "overseas", assetClass: "投資信託", currency: "USD", cost:    8000, marketValue:    9500 },
+    { region: "overseas", assetClass: "その他",   currency: "USD", cost:    5000, marketValue:   11000,
+      note: "暗号資産" }
   ],
 
   /* ---------- 預貯金 ---------- */

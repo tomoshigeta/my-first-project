@@ -227,7 +227,7 @@ h2 {
 .bar-name small { display: block; font-weight: 400; font-size: 11px; color: var(--text-muted); }
 
 .bar-track { display: flex; gap: 2px; height: var(--bar-h); min-width: 0; position: relative; }
-td .bar-track { min-width: 170px; }
+td .bar-track { min-width: 0; }
 .seg {
   height: 100%;
   min-width: 3px;
@@ -280,6 +280,9 @@ td .bar-track { min-width: 170px; }
 
 /* ---------- テーブル ---------- */
 .table-wrap { overflow-x: auto; }
+/* 棒はどのテーブルでも最右列・同じ幅。3セクションで縦に揃います。 */
+.bar-col { width: 264px; min-width: 264px; }
+.table-wrap table:has(.bar-col) { min-width: 900px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 caption {
   text-align: left;
