@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>③ 資産・負債明細 — 資産可視化ダッシュボード</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<main>
+  <h1>資産・負債明細</h1>
+  <p class="page-sub">有価証券・預貯金・負債。このページだけで総負債にたどり着けます。</p>
+
+  <section>
+    <div class="kpi-row" id="kpis"></div>
+  </section>
+
+  <section>
+    <h2>有価証券</h2>
+    <p class="sec-note">
+      資産クラス別・評価額ベース。棒の長さは評価額、縦線は取得原価。
+      外貨は元通貨で保持し、1&nbsp;USD&nbsp;=&nbsp;<span id="rate" class="num"></span>&nbsp;円で換算しています。
+    </p>
+    <div class="card table-wrap">
+      <table id="sec"></table>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--cat-equity)"></i>評価額</span>
+        <span><i class="swatch swatch-line"></i>取得原価</span>
+        <span><b class="legend-text gain">+1,234</b>&nbsp;含み益</span>
+        <span><b class="legend-text loss">▲1,234</b>&nbsp;含み損</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>預貯金</h2>
+    <p class="sec-note">金融機関別。円グラフではなく横棒にしているため、口座が増えても縦に伸びるだけです。</p>
+    <div class="card table-wrap">
+      <table id="dep"></table>
+    </div>
+  </section>
+
+  <section>
+    <h2>負債</h2>
+    <p class="sec-note">
+      ローン単位で保持。不動産ローンは合計1行のみ再掲しています（物件別の内訳は
+      <a href="realestate.html">② 不動産</a>）。
+    </p>
+    <div class="card table-wrap">
+      <table id="debt"></table>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--cat-repaid)"></i>返済済み</span>
+        <span><i class="swatch" style="background:var(--cat-debt)"></i>残債</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  const A = window.APP, D = A.D;
+  document.getElementById("sidebar").innerHTML = A.sidebar("accounts.html");
+  document.getElementById("rate").textContent = D.rates.USD;
+
+  document.getElementById("kpis").innerHTML =
+    '<div class="kpi"><div class="kpi-label">金融資産合計</div>' +
+      '<div class="kpi-scope">有価証券＋預貯金</div>' +
+      '<div class="kpi-value num">' + A.yen(A.FINANCIAL_ASSETS) + '</div></div>' +
+    '<div class="kpi"><div class="kpi-label">含み損益</div>' +
+      '<div class="kpi-scope">評価額 − 取得原価</div>' +
+      '<div class="kpi-value">' + A.plHTML(A.SEC_PL) + '</div></div>' +
+    '<div class="kpi"><div class="kpi-label">総負債</div>' +
+      '<div class="kpi-scope">不動産＋車＋多目的</div>' +
+      '<div class="kpi-value num">' + A.yen(A.TOTAL_DEBT) + '</div></div>';
+
+  /* ---- 有価証券 ---- */
+  const secMax = Math.max.apply(null, A.SEC.map(s => Math.max(s.valueJPY, s.costJPY)));
+  const REGION = { domestic: "国内", overseas: "海外" };
+  let secBody = "";
+  ["domestic", "overseas"].forEach(region => {
+    const rows = A.SEC.filter(s => s.region === region);
+    const sub = A.sum(rows, s => s.valueJPY);
+    secBody += '<tr class="group-row"><td colspan="6">' + REGION[region] +
+               '　<span class="num">' + A.yen(sub) + '</span></td></tr>';
+    secBody += rows.map(s => {
+      const native = s.currency === "JPY" ? "" :
+        '<small style="color:var(--text-muted)"> ' + s.currency + " " +
+        A.plain(s.marketValue) + "</small>";
+      return '<tr>' +
+        '<td>' + s.assetClass + '</td>' +
+        '<td class="n num">' + A.plain(s.costJPY) + '</td>' +
+        '<td class="n num">' + A.plain(s.valueJPY) + native + '</td>' +
+        '<td>' + A.valueBar(s.valueJPY, secMax, s.costJPY,
+            REGION[region] + " " + s.assetClass + "<br>評価額 <b>" + A.yen(s.valueJPY) + "</b>") + '</td>' +
+        '<td class="n">' + A.plHTML(s.plJPY) + '</td>' +
+        '<td class="n">' + A.plPctHTML(s.plJPY, s.costJPY) + '</td>' +
+      '</tr>';
+    }).join("");
+  });
+  document.getElementById("sec").innerHTML =
+    '<thead><tr><th>クラス</th><th class="n">取得原価</th><th class="n">評価額</th>' +
+    '<th style="width:190px">評価額と取得原価</th><th class="n">含み損益</th><th class="n">損益率</th></tr></thead>' +
+    '<tbody>' + secBody +
+    '<tr class="total-row"><td>合計</td>' +
+      '<td class="n num">' + A.plain(A.SEC_COST) + '</td>' +
+      '<td class="n num">' + A.plain(A.SEC_VALUE) + '</td><td></td>' +
+      '<td class="n">' + A.plHTML(A.SEC_PL) + '</td>' +
+      '<td class="n">' + A.plPctHTML(A.SEC_PL, A.SEC_COST) + '</td></tr></tbody>';
+
+  /* ---- 預貯金 ---- */
+  const depMax = Math.max.apply(null, D.deposits.map(d => d.amount));
+  document.getElementById("dep").innerHTML =
+    '<thead><tr><th>金融機関</th><th class="n">残高</th><th style="width:220px">構成</th>' +
+    '<th class="n">構成比</th></tr></thead><tbody>' +
+    D.deposits.map(d =>
+      '<tr><td>' + d.bank + '</td>' +
+      '<td class="n num">' + A.plain(d.amount) + '</td>' +
+      '<td>' + A.valueBar(d.amount, depMax, null,
+          d.bank + "<br><b>" + A.yen(d.amount) + "</b>") + '</td>' +
+      '<td class="n num">' + A.pct(d.amount, A.DEPOSITS) + '</td></tr>'
+    ).join("") +
+    '<tr class="total-row"><td>合計</td><td class="n num">' + A.plain(A.DEPOSITS) +
+      '</td><td></td><td class="n num">100.0%</td></tr></tbody>';
+
+  /* ---- 負債 ---- */
+  const debtRows = D.otherLoans.map(l => ({
+    name: l.name, lender: l.lender, rate: l.rate.toFixed(1) + " %",
+    monthly: l.monthlyRepayment,
+    repaid: l.principal - l.balance, balance: l.balance, principal: l.principal,
+    link: null
+  }));
+  debtRows.push({
+    name: "不動産ローン 合計", lender: D.realEstate.length + " 物件", rate: "—",
+    monthly: A.sum(D.realEstate, p => p.loan.monthlyRepayment),
+    repaid: A.RE.cumulativeRepaid, balance: A.RE.balance, principal: A.RE.principal,
+    link: "realestate.html"
+  });
+  const debtMax = Math.max.apply(null, debtRows.map(r => r.principal));
+  document.getElementById("debt").innerHTML =
+    '<thead><tr><th>借入</th><th>借入先</th><th class="n">金利</th><th class="n">月返済額</th>' +
+    '<th class="n">残債</th><th style="width:200px">返済済み / 残債</th></tr></thead><tbody>' +
+    debtRows.map(r =>
+      '<tr><td><b>' + r.name + '</b>' +
+        (r.link ? ' <a href="' + r.link + '" style="font-size:11px">詳細 →</a>' : "") + '</td>' +
+      '<td>' + r.lender + '</td>' +
+      '<td class="n num">' + r.rate + '</td>' +
+      '<td class="n num">' + A.plain(r.monthly) + '</td>' +
+      '<td class="n num">' + A.plain(r.balance) + '</td>' +
+      '<td>' + A.stackedBar([
+        { cls: "seg-repaid", value: r.repaid,  label: r.name + " 返済済み" },
+        { cls: "seg-debt",   value: r.balance, label: r.name + " 残債" }
+      ], debtMax) + '</td></tr>'
+    ).join("") +
+    '<tr class="total-row"><td>総負債</td><td></td><td></td>' +
+      '<td class="n num">' + A.plain(A.sum(debtRows, r => r.monthly)) + '</td>' +
+      '<td class="n num">' + A.plain(A.TOTAL_DEBT) + '</td><td></td></tr></tbody>';
+
+  A.initTooltip();
+})();
+</script>
+</body>
+</html>

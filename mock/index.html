@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>① サマリー — 資産可視化ダッシュボード</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<main>
+  <h1>サマリー</h1>
+  <p class="page-sub">金融資産と総負債を並べて確認します。</p>
+
+  <section>
+    <div class="kpi-row" id="headline"></div>
+    <div class="callout">
+      <b>この2つは足し引きしていません。</b>
+      不動産は現在の時価が確定できないため資産として金額を持たず、
+      借入だけが総負債に含まれます。この非対称のまま引き算すると
+      純資産が実態より小さく出るため、合算せず並べています。
+    </div>
+  </section>
+
+  <section>
+    <h2>内訳</h2>
+    <p class="sec-note">不動産と金融資産は性質が違うため、合算せず別々に表示します。</p>
+    <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr))">
+      <div class="card" id="block-re"></div>
+      <div class="card" id="block-fin"></div>
+    </div>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  const A = window.APP, D = A.D;
+  document.getElementById("sidebar").innerHTML = A.sidebar("index.html");
+
+  document.getElementById("headline").innerHTML =
+    '<div class="kpi lg">' +
+      '<div class="kpi-label">金融資産合計</div>' +
+      '<div class="kpi-scope">有価証券＋預貯金（不動産を含まない）</div>' +
+      '<div class="kpi-value num">' + A.yen(A.FINANCIAL_ASSETS) + '</div>' +
+      '<div class="kpi-sub">うち含み損益 ' + A.plHTML(A.SEC_PL) + '</div>' +
+    '</div>' +
+    '<div class="kpi lg">' +
+      '<div class="kpi-label">総負債</div>' +
+      '<div class="kpi-scope">不動産ローン＋車＋多目的</div>' +
+      '<div class="kpi-value num">' + A.yen(A.TOTAL_DEBT) + '</div>' +
+      '<div class="kpi-sub">不動産 ' + A.yen(A.RE.balance) +
+        ' ／ その他 ' + A.yen(A.OTHER_DEBT) + '</div>' +
+    '</div>';
+
+  /* 不動産ブロック */
+  document.getElementById("block-re").innerHTML =
+    '<h2>不動産</h2>' +
+    '<p class="sec-note">時価は持たないため、取得時の総投資額で表示します。</p>' +
+    A.stackedBar([
+      { cls: "seg-equity", value: A.RE.ownFunds,         label: "自己資金" },
+      { cls: "seg-repaid", value: A.RE.cumulativeRepaid, label: "累計返済額" },
+      { cls: "seg-debt",   value: A.RE.balance,          label: "残債" }
+    ]) +
+    '<table style="margin-top:16px">' +
+      '<tr><td>総投資額</td><td class="n num">' + A.yen(A.RE.totalInvestment) + '</td></tr>' +
+      '<tr><td>自己資金累計</td><td class="n num">' + A.yen(A.RE.ownFunds) + '</td></tr>' +
+      '<tr><td>累計返済額</td><td class="n num">' + A.yen(A.RE.cumulativeRepaid) + '</td></tr>' +
+      '<tr><td>残債合計</td><td class="n num">' + A.yen(A.RE.balance) + '</td></tr>' +
+      '<tr class="total-row"><td>返済進捗率</td><td class="n num">' +
+        A.pct(A.RE.cumulativeRepaid, A.RE.principal) + '</td></tr>' +
+    '</table>' +
+    '<div class="legend">' +
+      '<span><i class="swatch" style="background:var(--cat-equity)"></i>自己資金</span>' +
+      '<span><i class="swatch" style="background:var(--cat-repaid)"></i>累計返済額</span>' +
+      '<span><i class="swatch" style="background:var(--cat-debt)"></i>残債</span>' +
+    '</div>';
+
+  /* 金融資産ブロック */
+  document.getElementById("block-fin").innerHTML =
+    '<h2>金融資産</h2>' +
+    '<p class="sec-note">評価額ベース。外貨は ' + A.D.asOf + ' のレートで円換算。</p>' +
+    '<table>' +
+      '<tr><td>有価証券（評価額）</td><td class="n num">' + A.yen(A.SEC_VALUE) + '</td></tr>' +
+      '<tr><td>　取得原価</td><td class="n num">' + A.yen(A.SEC_COST) + '</td></tr>' +
+      '<tr><td>　含み損益</td><td class="n">' + A.plHTML(A.SEC_PL) + '</td></tr>' +
+      '<tr><td>預貯金</td><td class="n num">' + A.yen(A.DEPOSITS) + '</td></tr>' +
+      '<tr class="total-row"><td>金融資産合計</td><td class="n num">' +
+        A.yen(A.FINANCIAL_ASSETS) + '</td></tr>' +
+    '</table>' +
+    '<div class="callout" style="margin-top:18px">' +
+      '含み損益は<b>文字の色</b>だけで表します（赤＝益／青＝損）。' +
+      '棒の塗りはカテゴリを表すため、損益には使いません。' +
+    '</div>';
+
+  A.initTooltip();
+})();
+</script>
+</body>
+</html>

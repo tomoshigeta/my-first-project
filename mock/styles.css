@@ -1,0 +1,351 @@
+/* ============================================================
+   資産可視化ダッシュボード — 共通スタイル
+   色ルール（確定仕様 Q31 / Q34）:
+     面（棒の塗り）= カテゴリ色のみ。損益は塗らない。
+     文字         = 損益色。日本式（赤=含み益 / 青=含み損）。
+   カテゴリ色の意味は3ページ共通:
+     緑 = 自分の持ち分（自己資金・有価証券評価額・預金残高）
+     紫 = 返済済み（借入のうち返し終わった分）
+     青 = 負債（残債）
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  --surface-page:      #f4f4f2;
+  --surface-1:         #fcfcfb;
+  --surface-2:         #efefec;
+  --border:            #dedcd6;
+  --border-strong:     #c6c4bc;
+
+  --text-primary:      #14140f;
+  --text-secondary:    #52514e;
+  --text-muted:        #7a7873;
+
+  /* カテゴリ色（面にのみ使用） */
+  --cat-equity:        #059669;  /* 自分の持ち分 */
+  --cat-repaid:        #4a3aa7;  /* 返済済み */
+  --cat-debt:          #3b82f6;  /* 負債・残債 */
+
+  /* 損益色（文字にのみ使用）— 日本式 */
+  --pl-gain:           #c62828;  /* 含み益 = 赤 */
+  --pl-loss:           #1c5cab;  /* 含み損 = 青 */
+
+  --focus:             #2a78d6;
+  --radius:            10px;
+  --bar-h:             22px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-page:    #121211;
+    --surface-1:       #1a1a19;
+    --surface-2:       #232322;
+    --border:          #33332f;
+    --border-strong:   #4a4a45;
+
+    --text-primary:    #f6f6f2;
+    --text-secondary:  #c3c2b7;
+    --text-muted:      #94938b;
+
+    --cat-equity:      #0ea472;
+    --cat-repaid:      #9085e9;
+    --cat-debt:        #2b6fc0;
+
+    --pl-gain:         #f87171;
+    --pl-loss:         #6da7ec;
+
+    --focus:           #5598e7;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+               "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  display: flex;
+  min-height: 100vh;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ---------- サイドバー ---------- */
+.sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  background: var(--surface-1);
+  border-right: 1px solid var(--border);
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.owner {
+  padding: 0 8px;
+}
+.owner-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: .08em;
+}
+.owner-name {
+  font-size: 19px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.owner-asof {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.nav { display: flex; flex-direction: column; gap: 3px; }
+.nav a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.nav a:hover { background: var(--surface-2); color: var(--text-primary); }
+.nav a[aria-current="page"] {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-weight: 700;
+  border-color: var(--border);
+}
+
+.sidebar-foot { margin-top: auto; }
+.btn-future {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: not-allowed;
+}
+.btn-future small { display: block; font-size: 11px; margin-top: 1px; }
+
+/* ---------- メイン ---------- */
+main {
+  flex: 1;
+  padding: 34px 40px 80px;
+  max-width: 1180px;
+  min-width: 0;
+}
+
+h1 {
+  font-size: 25px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  letter-spacing: -.01em;
+}
+.page-sub { color: var(--text-secondary); font-size: 13px; margin: 0 0 28px; }
+
+section { margin-bottom: 38px; }
+h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 3px;
+  letter-spacing: .01em;
+}
+.sec-note {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+
+/* ---------- KPI ---------- */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.kpi {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.kpi-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+.kpi-scope { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.kpi-value {
+  font-size: 27px;
+  font-weight: 700;
+  margin-top: 10px;
+  letter-spacing: -.02em;
+}
+.kpi.lg .kpi-value { font-size: 34px; }
+.kpi-sub { font-size: 12px; color: var(--text-secondary); margin-top: 5px; }
+
+/* 損益テキスト（面には絶対に使わない） */
+.gain { color: var(--pl-gain); }
+.loss { color: var(--pl-loss); }
+
+/* ---------- 注記 ---------- */
+.callout {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  background: var(--surface-1);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin: 16px 0 0;
+}
+.callout b { color: var(--text-primary); }
+
+/* ---------- 積み上げ横棒 ---------- */
+.bars { display: flex; flex-direction: column; gap: 16px; }
+
+.bar-row { display: grid; grid-template-columns: 108px 1fr auto; gap: 14px; align-items: center; }
+.bar-name { font-size: 13px; font-weight: 600; }
+.bar-name small { display: block; font-weight: 400; font-size: 11px; color: var(--text-muted); }
+
+.bar-track { display: flex; gap: 2px; height: var(--bar-h); min-width: 0; position: relative; }
+td .bar-track { min-width: 170px; }
+.seg {
+  height: 100%;
+  min-width: 3px;
+  position: relative;
+  cursor: default;
+}
+.seg:first-child { border-radius: 4px 0 0 4px; }
+.seg:last-child  { border-radius: 0 4px 4px 0; }
+.seg:only-child  { border-radius: 4px; }
+
+.seg-equity { background: var(--cat-equity); }
+.seg-repaid { background: var(--cat-repaid); }
+.seg-debt   { background: var(--cat-debt); }
+.seg-rest   { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--border); }
+
+.bar-total { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.bar-total small { display: block; font-weight: 400; color: var(--text-muted); font-size: 11px; }
+
+/* 取得原価の参照マーカー（トラック全体を基準に置く） */
+.ref-mark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text-primary);
+  opacity: .8;
+}
+.ref-mark::after {
+  content: "";
+  position: absolute;
+  inset: -6px -5px;
+}
+
+/* ---------- 凡例 ---------- */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.swatch { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+.swatch-line { width: 2px; height: 13px; border-radius: 0; background: var(--text-primary); opacity: .8; }
+.legend-text { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---------- テーブル ---------- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+caption {
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  padding-bottom: 10px;
+}
+th, td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+thead th {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-strong);
+}
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-2); }
+tr.total-row td { font-weight: 700; border-top: 1px solid var(--border-strong); }
+.group-row td {
+  background: var(--surface-2);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ---------- ツールチップ ---------- */
+#tip {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  background: var(--text-primary);
+  color: var(--surface-1);
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .1s;
+  box-shadow: 0 4px 14px rgba(0,0,0,.22);
+}
+#tip.on { opacity: 1; }
+#tip b { font-variant-numeric: tabular-nums; }
+
+/* ---------- レスポンシブ ---------- */
+@media (max-width: 860px) {
+  body { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 18px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .nav { flex-direction: row; flex-wrap: wrap; }
+  .sidebar-foot { margin-top: 0; }
+  .btn-future { width: auto; padding: 8px 14px; }
+  main { padding: 24px 18px 60px; }
+  .bar-row { grid-template-columns: 1fr; gap: 6px; }
+  .bar-total { text-align: right; }
+}
