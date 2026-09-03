@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>不動産資産可視化ダッシュボード - EstateTrack Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1F2937",
+                        "trust-blue": "#3B82F6",
+                        "forest-growth": "#059669",
+                        "warm-camel": "#B45309",
+                        "background": "#FFFFFF",
+                        "surface": "#F8F9FA",
+                        "surface-container": "#F3F4F6",
+                        "border-subtle": "#E5E7EB",
+                        "text-main": "#1F2937",
+                        "text-muted": "#6B7280"
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
+                        mono: ['Inter', 'monospace'] // Using Inter for tabular nums
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+        .chart-donut {
+            width: 160px; height: 160px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .chart-inner { width: 110px; height: 110px; border-radius: 50%; background-color: white; }
+    </style>
+</head>
+<body class="bg-background text-text-main font-sans antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="hidden lg:flex flex-col h-full p-6 gap-6 bg-surface border-r border-border-subtle w-72 shrink-0">
+<div class="mb-8 px-2 flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-trust-blue flex items-center justify-center text-white font-bold text-xl">AM</div>
+<div>
+<h1 class="text-xl font-bold text-primary">Asset Management</h1>
+<p class="text-xs text-text-muted font-semibold tracking-wider">Institutional Grade</p>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-trust-blue rounded-lg transition-colors border border-blue-100" href="#">
+<span class="material-symbols-outlined" style='font-variation-settings: "FILL" 1;'>dashboard</span>
+<span class="text-sm font-semibold tracking-wide">ダッシュボード</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-text-muted hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-border-subtle" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="text-sm font-semibold tracking-wide">物件一覧</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-text-muted hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-border-subtle" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="text-sm font-semibold tracking-wide">収支レポート</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-text-muted hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-border-subtle" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-semibold tracking-wide">設定</span>
+</a>
+</div>
+<div class="mt-auto pt-6 border-t border-border-subtle">
+<button class="w-full py-3 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 shadow-sm">
+<span class="material-symbols-outlined">add</span>
+            物件追加
+        </button>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-y-auto bg-background">
+<!-- TopNavBar (Mobile only for layout consistency) -->
+<header class="lg:hidden flex justify-between items-center w-full px-6 h-16 bg-white border-b border-border-subtle">
+<div class="text-xl font-bold text-primary">EstateTrack Pro</div>
+<button class="text-primary"><span class="material-symbols-outlined">menu</span></button>
+</header>
+<div class="p-6 lg:p-10 max-w-[1280px] mx-auto w-full flex flex-col gap-10">
+<!-- Page Header -->
+<div class="flex flex-col gap-2">
+<h2 class="text-3xl md:text-4xl font-bold text-primary tracking-tight">所有不動産情報</h2>
+<p class="text-sm text-text-muted font-medium">2023年10月時点の資産状況</p>
+</div>
+<!-- KPIs (Bento Grid Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-white border border-border-subtle rounded-xl p-8 flex flex-col justify-between h-40 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<span class="text-xs font-semibold tracking-wider text-text-muted">総資産額</span>
+<span class="material-symbols-outlined text-gray-400">account_balance</span>
+</div>
+<div class="text-3xl font-bold text-primary tabular-nums tracking-tight">¥ 250,000,000</div>
+</div>
+<div class="bg-white border border-border-subtle rounded-xl p-8 flex flex-col justify-between h-40 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<span class="text-xs font-semibold tracking-wider text-text-muted">純資産額</span>
+<span class="material-symbols-outlined text-gray-400">savings</span>
+</div>
+<div class="text-3xl font-bold text-primary tabular-nums tracking-tight">¥ 130,000,000</div>
+</div>
+<div class="bg-white border border-border-subtle rounded-xl p-8 flex flex-col justify-between h-40 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start z-10">
+<span class="text-xs font-semibold tracking-wider text-text-muted">LTV (借入金比率)</span>
+<span class="material-symbols-outlined text-gray-400">percent</span>
+</div>
+<div class="flex items-end justify-between z-10">
+<div class="text-3xl font-bold text-primary tabular-nums tracking-tight">48.0%</div>
+<div class="text-xs font-bold text-forest-growth bg-green-50 px-3 py-1.5 border border-green-200 rounded-md">健全</div>
+</div>
+<div class="absolute bottom-0 left-0 h-2 bg-gray-100 w-full">
+<div class="h-full bg-trust-blue w-[48%] rounded-r-full"></div>
+</div>
+</div>
+</div>
+<!-- Individual Property Cards Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+<!-- Property A -->
+<div class="bg-white border border-border-subtle rounded-xl p-8 flex flex-col shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-center mb-8 pb-4 border-b border-border-subtle">
+<h3 class="text-xl font-bold text-primary">物件A</h3>
+<div class="text-xs font-bold text-trust-blue bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-md">進捗 11.3%</div>
+</div>
+<div class="relative flex justify-center items-center py-6">
+<div class="chart-donut shadow-inner" style="background: conic-gradient(#E5E7EB 0% 9%, #3B82F6 9% 80%, #059669 80% 100%);">
+<div class="chart-inner flex items-center justify-center flex-col shadow-sm">
+<span class="text-[10px] font-semibold text-text-muted tracking-wider uppercase">総投資額</span>
+<span class="text-2xl font-bold text-primary tabular-nums">50M</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-4 mt-8">
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-gray-200 shrink-0 shadow-sm"></div>
+<div class="flex-1 flex justify-between items-center">
+<div class="text-sm font-medium text-text-muted">累計返済額</div>
+<div class="text-sm font-bold text-primary tabular-nums">¥ 4,500,000</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-trust-blue shrink-0 shadow-sm"></div>
+<div class="flex-1 flex justify-between items-center">
+<div class="text-sm font-medium text-text-muted">借入金 (残債)</div>
+<div class="text-sm font-bold text-primary tabular-nums">¥ 35,500,000</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-forest-growth shrink-0 shadow-sm"></div>
+<div class="flex-1 flex justify-between items-center">
+<div class="text-sm font-medium text-text-muted">自己資金</div>
+<div class="text-sm font-bold text-primary tabular-nums">¥ 10,000,000</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Property B -->
+<div class="bg-white border border-border-subtle rounded-xl p-8 flex flex-col shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-center mb-8 pb-4 border-b border-border-subtle">
+<h3 class="text-xl font-bold text-primary">物件B</h3>
+<div class="text-xs font-bold text-trust-blue bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-md">進捗 3.3%</div>
+</div>
+<div class="relative flex justify-center items-center py-6">
+<div class="chart-donut shadow-inner" style="background: conic-gradient(#E5E7EB 0% 3%, #3B82F6 3% 80%, #059669 80% 100%);">
+<div class="chart-inner flex items-center justify-center flex-col shadow-sm">
+<span class="text-[10px] font-semibold text-text-muted tracking-wider uppercase">総投資額</span>
+<span class="text-2xl font-bold text-primary tabular-nums">75M</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-4 mt-8">
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-gray-200 shrink-0 shadow-sm"></div>
+<div class="flex-1 flex justify-between items-center">
+<div class="text-sm font-medium text-text-muted">累計返済額</div>
+<div class="text-sm font-bold text-primary tabular-nums">¥ 2,000,000</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-trust-blue shrink-0 shadow-sm"></div>
+<div class="flex-1 flex justify-between items-center">
+<div class="text-sm font-medium text-text-muted">借入金 (残債)</div>
+<div class="text-sm font-bold text-primary tabular-nums">¥ 58,000,000</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-forest-growth shrink-0 shadow-sm"></div>
+<div class="flex-1 flex justify-between items-center">
+<div class="text-sm font-medium text-text-muted">自己資金</div>
+<div class="text-sm font-bold text-primary tabular-nums">¥ 15,000,000</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Property C -->
+<div class="bg-white border border-border-subtle rounded-xl p-8 flex flex-col shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-center mb-8 pb-4 border-b border-border-subtle">
+<h3 class="text-xl font-bold text-primary">物件C</h3>
+<div class="text-xs font-bold text-forest-growth bg-green-50 border border-green-200 px-3 py-1.5 rounded-md">進捗 42.5%</div>
+</div>
+<div class="relative flex justify-center items-center py-6">
+<div class="chart-donut shadow-inner" style="background: conic-gradient(#E5E7EB 0% 34%, #3B82F6 34% 80%, #059669 80% 100%);">
+<div class="chart-inner flex items-center justify-center flex-col shadow-sm">
+<span class="text-[10px] font-semibold text-text-muted tracking-wider uppercase">総投資額</span>
+<span class="text-2xl font-bold text-primary tabular-nums">25M</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-4 mt-8">
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-gray-200 shrink-0 shadow-sm"></div>
+<div class="flex-1 flex justify-between items-center">
+<div class="text-sm font-medium text-text-muted">累計返済額</div>
+<div class="text-sm font-bold text-primary tabular-nums">¥ 8,500,000</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-trust-blue shrink-0 shadow-sm"></div>
+<div class="flex-1 flex justify-between items-center">
+<div class="text-sm font-medium text-text-muted">借入金 (残債)</div>
+<div class="text-sm font-bold text-primary tabular-nums">¥ 11,500,000</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-3 h-3 rounded-full bg-forest-growth shrink-0 shadow-sm"></div>
+<div class="flex-1 flex justify-between items-center">
+<div class="text-sm font-medium text-text-muted">自己資金</div>
+<div class="text-sm font-bold text-primary tabular-nums">¥ 5,000,000</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Property Details Table -->
+<div class="bg-white border border-border-subtle rounded-xl overflow-hidden shadow-sm mt-4">
+<h3 class="text-xl font-bold text-primary p-6 lg:p-8 border-b border-border-subtle bg-gray-50/50">物件詳細</h3>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface text-text-muted border-b border-border-subtle">
+<th class="p-6 font-semibold text-sm w-1/4">物件名</th>
+<th class="p-6 font-semibold text-sm text-center w-1/4">物件A</th>
+<th class="p-6 font-semibold text-sm text-center w-1/4">物件B</th>
+<th class="p-6 font-semibold text-sm text-center w-1/4">物件C</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+<td class="p-6 font-medium text-primary">住所</td>
+<td class="p-6 text-center text-text-muted">東京都港区...</td>
+<td class="p-6 text-center text-text-muted">東京都渋谷区...</td>
+<td class="p-6 text-center text-text-muted">神奈川県横浜市...</td>
+</tr>
+<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+<td class="p-6 font-medium text-primary">広さ</td>
+<td class="p-6 text-right tabular-nums text-text-main">45.5 m²</td>
+<td class="p-6 text-right tabular-nums text-text-main">60.2 m²</td>
+<td class="p-6 text-right tabular-nums text-text-main">85.0 m²</td>
+</tr>
+<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+<td class="p-6 font-medium text-primary">階数</td>
+<td class="p-6 text-right tabular-nums text-text-main">3 / 10 階</td>
+<td class="p-6 text-right tabular-nums text-text-main">8 / 15 階</td>
+<td class="p-6 text-right tabular-nums text-text-main">2 / 5 階</td>
+</tr>
+<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+<td class="p-6 font-medium text-primary">築年数</td>
+<td class="p-6 text-right tabular-nums text-text-main">15 年</td>
+<td class="p-6 text-right tabular-nums text-text-main">5 年</td>
+<td class="p-6 text-right tabular-nums text-text-main">22 年</td>
+</tr>
+<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+<td class="p-6 font-medium text-primary">金融機関</td>
+<td class="p-6 text-center text-text-muted">A銀行</td>
+<td class="p-6 text-center text-text-muted">B信用金庫</td>
+<td class="p-6 text-center text-text-muted">C銀行</td>
+</tr>
+<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+<td class="p-6 font-medium text-primary">借入額</td>
+<td class="p-6 text-right tabular-nums text-text-main">¥ 40,000,000</td>
+<td class="p-6 text-right tabular-nums text-text-main">¥ 60,000,000</td>
+<td class="p-6 text-right tabular-nums text-text-main">¥ 20,000,000</td>
+</tr>
+<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+<td class="p-6 font-medium text-primary">期間</td>
+<td class="p-6 text-right tabular-nums text-text-main">35 年</td>
+<td class="p-6 text-right tabular-nums text-text-main">30 年</td>
+<td class="p-6 text-right tabular-nums text-text-main">20 年</td>
+</tr>
+<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+<td class="p-6 font-medium text-primary">金利</td>
+<td class="p-6 text-right tabular-nums font-semibold text-warm-camel">1.8%</td>
+<td class="p-6 text-right tabular-nums text-text-main">0.8%</td>
+<td class="p-6 text-right tabular-nums text-text-main">1.2%</td>
+</tr>
+<tr class="hover:bg-gray-50 transition-colors bg-blue-50/30">
+<td class="p-6 font-bold text-primary">残債</td>
+<td class="p-6 text-right tabular-nums font-bold text-primary">¥ 35,500,000</td>
+<td class="p-6 text-right tabular-nums font-bold text-primary">¥ 58,000,000</td>
+<td class="p-6 text-right tabular-nums font-bold text-primary">¥ 11,500,000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="h-12 w-full"></div> <!-- spacer -->
+</div>
+</main>
+</body></html>
