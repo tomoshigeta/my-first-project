@@ -105,9 +105,9 @@
 
   /* 物件詳細（行＝物件、列＝属性） */
   const cols = [
-    ["住所",     p => p.address],
+    ["住所",     p => p.address || "—"],
     ["広さ",     p => p.areaSqm.toFixed(1) + " m²", 1],
-    ["階数",     p => p.floor, 1],
+    ["階数",     p => p.floor || "—", 1],
     ["築年数",   p => p.ageYears + " 年", 1],
     ["金融機関", p => p.loan.lender],
     ["借入額",   p => A.plain(p.loan.principal), 1],

@@ -3,7 +3,179 @@
    ============================================================ */
 (function () {
   "use strict";
-  const D = window.ASSET_DATA;
+  /* ---------- JSON の検査 ----------
+     画面が壊れる前に、初心者でも直せる日本語で指摘する。
+     形式の説明は data/README.md。 */
+  const isNum = v => typeof v === "number" && isFinite(v);
+  const isStr = v => typeof v === "string";
+  const esc = s => String(s).replace(/[&<>"]/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function validateData(d) {
+    const errs = [];
+    const fmt = n => Math.round(n).toLocaleString("ja-JP");
+    const need = (obj, key, type, where) => {
+      const v = obj == null ? undefined : obj[key];
+      const ok = type === "number" ? isNum(v) : type === "string" ? isStr(v) : Array.isArray(v);
+      if (!ok) {
+        const why = v === undefined ? "ありません"
+          : type === "number" ? '数字ではありません（" で囲まず、カンマも入れずに書きます）'
+          : type === "string" ? '文字ではありません（" で囲みます）'
+          : "[ ] の形になっていません";
+        errs.push(where + " に「" + key + "」が" + why);
+      }
+      return ok;
+    };
+    if (!d || typeof d !== "object" || Array.isArray(d)) return ["ファイル全体が { } で囲まれていません"];
+    need(d.owner, "name", "string", "owner");
+    need(d, "asOf", "string", "一番外側");
+    need(d.rates, "JPY", "number", "rates");
+    ["realEstate", "securities", "deposits", "otherLoans"].forEach(k => need(d, k, "array", "一番外側"));
+    if (errs.length) return errs;
+    const rateOK = cur => isStr(cur) && isNum(d.rates[cur]);
+    const rateErr = (w, cur) => errs.push(w + ": currency「" + cur + "」の為替レートが rates にありません");
+
+    d.realEstate.forEach((p, i) => {
+      const w = "realEstate の " + (i + 1) + " 件目" + (p && isStr(p.name) ? "（" + p.name + "）" : "");
+      need(p, "name", "string", w);
+      need(p, "areaSqm", "number", w);
+      need(p, "ageYears", "number", w);
+      const okInv = need(p, "totalInvestment", "number", w);
+      const okOwn = need(p, "ownFunds", "number", w);
+      if (!p || !p.loan || typeof p.loan !== "object") { errs.push(w + " に「loan」がありません"); return; }
+      const L = p.loan, wl = w + " の loan";
+      need(L, "lender", "string", wl);
+      const okPr = need(L, "principal", "number", wl);
+      const okBa = need(L, "balance", "number", wl);
+      const okRe = need(L, "cumulativeRepaid", "number", wl);
+      need(L, "rate", "number", wl);
+      need(L, "termYears", "number", wl);
+      need(L, "monthlyRepayment", "number", wl);
+      if (okPr && okBa && okRe && Math.round(L.balance + L.cumulativeRepaid) !== Math.round(L.principal))
+        errs.push(w + ": loan.principal（" + fmt(L.principal) + "）が balance + cumulativeRepaid（" +
+          fmt(L.balance + L.cumulativeRepaid) + "）と一致しません");
+      if (okInv && okOwn && okPr && Math.round(p.ownFunds + L.principal) !== Math.round(p.totalInvestment))
+        errs.push(w + ": totalInvestment（" + fmt(p.totalInvestment) + "）が ownFunds + loan.principal（" +
+          fmt(p.ownFunds + L.principal) + "）と一致しません");
+      if (!p.monthly || typeof p.monthly !== "object") { errs.push(w + " に「monthly」がありません"); return; }
+      ["rentIncome", "managementFee", "repairReserve", "propertyTaxMonthly"]
+        .forEach(k => need(p.monthly, k, "number", w + " の monthly"));
+    });
+
+    const REGIONS = ["domestic", "overseas"], CLASSES = ["株", "債券", "投資信託", "その他"];
+    d.securities.forEach((s, i) => {
+      const w = "securities の " + (i + 1) + " 件目";
+      if (!s || REGIONS.indexOf(s.region) < 0) errs.push(w + ': region は "domestic" か "overseas" です');
+      if (!s || CLASSES.indexOf(s.assetClass) < 0) errs.push(w + ': assetClass は "株" "債券" "投資信託" "その他" のどれかです');
+      need(s, "cost", "number", w);
+      need(s, "marketValue", "number", w);
+      if (!rateOK(s && s.currency)) rateErr(w, s && s.currency);
+    });
+    d.deposits.forEach((x, i) => {
+      const w = "deposits の " + (i + 1) + " 件目" + (x && isStr(x.bank) ? "（" + x.bank + "）" : "");
+      need(x, "bank", "string", w);
+      need(x, "amount", "number", w);
+      if (!rateOK(x && x.currency)) rateErr(w, x && x.currency);
+    });
+    d.otherLoans.forEach((l, i) => {
+      const w = "otherLoans の " + (i + 1) + " 件目" + (l && isStr(l.name) ? "（" + l.name + "）" : "");
+      need(l, "name", "string", w);
+      need(l, "lender", "string", w);
+      const okPr = need(l, "principal", "number", w);
+      const okBa = need(l, "balance", "number", w);
+      need(l, "rate", "number", w);
+      need(l, "monthlyRepayment", "number", w);
+      if (okPr && okBa && l.balance > l.principal)
+        errs.push(w + ": balance（残債）が principal（当初借入額）より大きくなっています");
+    });
+    return errs;
+  }
+
+  /* JSON.parse が失敗したとき、初心者がやりがちな原因を推定して添える */
+  function parseJSONText(text) {
+    text = String(text).replace(/^\uFEFF/, "");
+    try { return { data: JSON.parse(text) }; }
+    catch (e) {
+      const outside = text.replace(/"(?:[^"\\]|\\.)*"/g, '""');   // " " の中を除いた部分
+      const hints = [];
+      if (/[０-９．，：｛｝［］“”＂]/.test(text)) hints.push("全角の数字や記号（０１２ ， ． “ ”）が混ざっています。半角に直してください");
+      if (/\d,\d{3}(?!\d)/.test(outside)) hints.push("数字の中のカンマ（1,000,000）は使えません。1000000 と書きます");
+      if (/,\s*[\]}]/.test(outside)) hints.push("最後の項目のあとに余分な , があります。消してください");
+      if (/\/\/|\/\*/.test(outside)) hints.push("JSON にはメモ（// や /* */）を書けません。消してください");
+      if (/'/.test(outside)) hints.push("文字は ' ではなく \" で囲みます");
+      hints.push("ブラウザの報告: " + e.message);
+      return { errors: ["JSON として読めませんでした"].concat(hints) };
+    }
+  }
+
+  /* ---------- 表示するデータの決定 ----------
+     1. 「JSONファイルを読み込む」で取り込んだ JSON（ブラウザに控えが残る）
+     2. なければ data.js のサンプル
+     正はあくまで手元の JSON ファイル（仕様: 手書きの単一ファイルが正）。
+     ブラウザ内の控えは「サンプルに戻す」で消える。 */
+  const STORE_KEY  = "assetDashboard.json";
+  const STORE_NAME = "assetDashboard.fileName";
+  function storageGet(k)    { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function storageSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  function storageDel(k)    { try { localStorage.removeItem(k); } catch (e) {} }
+
+  const SOURCE = { kind: "sample", label: "サンプル（data.js）" };
+  let D = window.ASSET_DATA;
+  (function () {
+    const text = storageGet(STORE_KEY);
+    if (!text) return;
+    try {
+      const parsed = JSON.parse(text);
+      if (validateData(parsed).length) throw new Error("stored data is invalid");
+      D = parsed;
+      SOURCE.kind = "json";
+      SOURCE.label = storageGet(STORE_NAME) || "JSON ファイル";
+    } catch (e) {
+      storageDel(STORE_KEY); storageDel(STORE_NAME);
+    }
+  })();
+
+  /* ---------- JSON ファイルの読み込み ---------- */
+  function showReport(fileName, errs) {
+    let box = document.getElementById("load-report");
+    if (!box) { box = document.createElement("div"); box.id = "load-report"; document.body.appendChild(box); }
+    box.innerHTML =
+      '<div class="load-report-head"><b>' + esc(fileName) + "</b> は読み込めませんでした" +
+        '<button type="button" class="load-report-close" aria-label="閉じる">×</button></div>' +
+      "<p>下の点を直して、もう一度「JSONファイルを読み込む」を押してください。" +
+        "書き方は <code>data/README.md</code> にあります。</p>" +
+      "<ol>" + errs.map(m => "<li>" + esc(m) + "</li>").join("") + "</ol>";
+    box.querySelector(".load-report-close").onclick = () => box.remove();
+  }
+  function loadJSONFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const r = parseJSONText(reader.result);
+      const errs = r.errors || validateData(r.data);
+      if (errs.length) { showReport(file.name, errs); return; }
+      if (!storageSet(STORE_KEY, JSON.stringify(r.data))) {
+        showReport(file.name, ["ブラウザに保存できませんでした（シークレットモードでは使えないことがあります）"]);
+        return;
+      }
+      storageSet(STORE_NAME, file.name);
+      location.reload();
+    };
+    reader.onerror = () => showReport(file.name, ["ファイルを開けませんでした"]);
+    reader.readAsText(file, "utf-8");
+  }
+  document.addEventListener("change", e => {
+    const input = e.target;
+    if (!input || input.id !== "json-file") return;
+    const f = input.files && input.files[0];
+    if (f) loadJSONFile(f);
+    input.value = "";
+  });
+  document.addEventListener("click", e => {
+    if (e.target.closest && e.target.closest("#reset-sample")) {
+      storageDel(STORE_KEY); storageDel(STORE_NAME);
+      location.reload();
+    }
+  });
 
   /* ---------- 整形 ---------- */
   const yen = n => "¥ " + Math.round(n).toLocaleString("ja-JP");
@@ -150,11 +322,19 @@
     return '' +
       '<div class="owner">' +
         '<div class="owner-label">保有者</div>' +
-        '<div class="owner-name">' + D.owner.name + "</div>" +
-        '<div class="owner-asof num">' + D.asOf + " 時点</div>" +
+        '<div class="owner-name">' + esc(D.owner.name) + "</div>" +
+        '<div class="owner-asof num">' + esc(D.asOf) + " 時点</div>" +
       "</div>" +
       '<nav class="nav">' + nav + "</nav>" +
       '<div class="sidebar-foot">' +
+        '<div class="data-source">' +
+          '<div class="owner-label">表示中のデータ</div>' +
+          '<div class="data-source-name">' + esc(SOURCE.label) + "</div>" +
+          '<label class="btn-load">JSONファイルを読み込む' +
+            '<input type="file" id="json-file" accept=".json,application/json"></label>' +
+          (SOURCE.kind === "json"
+            ? '<button type="button" class="btn-reset" id="reset-sample">サンプルに戻す</button>' : "") +
+        "</div>" +
         '<button class="btn-future" disabled title="将来のアプリ化で実装します">' +
           "物件追加<small>準備中</small>" +
         "</button>" +
@@ -188,7 +368,7 @@
   }
 
   window.APP = {
-    D, RE, SEC, SEC_VALUE, SEC_COST, SEC_PL, DEPOSITS,
+    D, SOURCE, validateData, parseJSONText, RE, SEC, SEC_VALUE, SEC_COST, SEC_PL, DEPOSITS,
     FINANCIAL_ASSETS, OTHER_DEBT, TOTAL_DEBT, CF_TOTAL,
     yen, plain, pl, plHTML, plPctHTML, pct, sum, cashflow,
     stackedBar, valueBar, plBar, sidebar, initTooltip

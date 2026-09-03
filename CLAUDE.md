@@ -20,7 +20,11 @@
 
 - **外部依存ゼロを保つ。** CDN・npm・ビルド・外部APIを使わず、
   `mock/index.html` をダブルクリックすれば動く状態を維持する
-- **`mock/data.js` が唯一の手書きデータ。** 守るべき不変条件は `mock/README.md`
+- **データは手書きの JSON 1枚。** 形式は `data/template.json`、項目の説明は `data/README.md`。
+  `mock/data.js` は同じ形式のサンプルで、画面は「JSONファイルを読み込む」で本物に切り替える。
+  守るべき不変条件は `mock/README.md`
+- **本物の資産データを commit しない。** このリポジトリは public。`data/` は
+  `template.json` と `README.md` 以外を `.gitignore` で除外してある。外さないこと
 - **損益セグメントの斜めハッチは判読性を担保している。** 色覚多様性とダークモードでは
   色だけで区別できないため。色やハッチに触れるときは `dataviz` スキルの
   `scripts/validate_palette.js` で再検証する

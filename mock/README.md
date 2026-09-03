@@ -6,6 +6,11 @@ grilling（全35問）で決めた仕様を、実際に見て確かめるため�
 ## 開き方
 
 `index.html` をブラウザでダブルクリックするだけです（サーバ不要）。
+最初はサンプル（`data.js`）が表示されます。
+
+自分のデータを映すには、左下の **「JSONファイルを読み込む」** から JSON ファイルを選びます。
+JSON の書き方と手順は [`../data/README.md`](../data/README.md)、ひな形は
+[`../data/template.json`](../data/template.json) です。
 
 ## ファイル
 
@@ -14,13 +19,13 @@ grilling（全35問）で決めた仕様を、実際に見て確かめるため�
 | `index.html` | ① サマリー — 金融資産と総負債を並置 |
 | `realestate.html` | ② 不動産 — 物件別の投資構成と月次収支 |
 | `accounts.html` | ③ 資産・負債明細 — 有価証券・預貯金・負債 |
-| `data.js` | **手で書き換えるのはこのファイルだけ** |
+| `data.js` | サンプルデータ。形式は `../data/template.json` と同一 |
 | `app.js` | 集計・整形・描画の共通ロジック |
 | `styles.css` | 配色トークンとレイアウト |
 
-## data.js の不変条件
+## データの不変条件
 
-壊すと画面が合わなくなります。
+`data.js` と読み込む JSON の両方に当てはまります。壊すと画面が合わなくなります。
 
 - 期間を持つ金額（収支・返済）はすべて **月額**
 - 固定資産税は **年額 ÷ 12** の平均月額（`propertyTaxMonthly`）
@@ -28,9 +33,22 @@ grilling（全35問）で決めた仕様を、実際に見て確かめるため�
 - `totalInvestment = ownFunds + loan.principal`
 - `loan.principal = loan.balance + loan.cumulativeRepaid`
 
-`.json` ではなく `.js` にしてあるのは、`file://` で開いたときに `fetch` が
-CORS で失敗するためです。ローカルサーバで配信する段階になったら、
-`window.ASSET_DATA = ` の右辺をそのまま `data.json` に移せます。
+読み込み時に `app.js` の `validateData` がこの不変条件と項目の型を検査し、
+合わなければ読み込まずに「どこをどう直すか」を右下に表示します。
+
+## JSON の読み込みの仕組み
+
+`file://` で開いたページは `fetch` で隣の `.json` を読めない（CORS）ため、
+`<input type="file">` でユーザーにファイルを選んでもらい、`FileReader` で読みます。
+読めた JSON は `localStorage`（キー `assetDashboard.json`）に控えを置き、
+3ページの移動と再読み込みをまたいで同じデータを表示します。
+
+- 控えはあくまでキャッシュで、**正は手元の JSON ファイル**（仕様: 手書きの単一ファイルが正）
+- 「サンプルに戻す」で控えを消し、`data.js` に戻る
+- 控えが壊れていれば黙って捨て、`data.js` に戻る
+
+サンプルの `data.js` は、`window.ASSET_DATA = ` の右辺が JSON と同じ形です。
+ローカルサーバで配信する段階になれば、そのまま `fetch` に置き換えられます。
 
 ## 色のルール
 
