@@ -20,11 +20,16 @@
 
 - **外部依存ゼロを保つ。** CDN・npm・ビルド・外部APIを使わず、
   `mock/index.html` をダブルクリックすれば動く状態を維持する
-- **データは手書きの JSON 1枚。** 形式は `data/template.json`、項目の説明は `data/README.md`。
+- **データは JSON 1枚が正。** 形式は `data/template.json`、項目の説明は `data/README.md`。
   `mock/data.js` は同じ形式のサンプルで、画面は「JSONファイルを読み込む」で本物に切り替える。
   守るべき不変条件は `mock/README.md`
+- **入力は Excel（`data/input-sheet.xlsx`）が下書き。** `tools/xlsx_to_json.py` で JSON に変換する。
+  シートを直したら `tools/build_input_sheet.py` を実行して作り直し、変換ツールの列位置も合わせる。
+  `tools/` は画面の動作に関係しない（外部依存ゼロの制約は `mock/` の話）
 - **本物の資産データを commit しない。** このリポジトリは public。`data/` は
-  `template.json` と `README.md` 以外を `.gitignore` で除外してある。外さないこと
+  白紙のひな形（`template.json` / `input-sheet.xlsx`）と `README.md` 以外を
+  `.gitignore` で除外してある。外さないこと。
+  **`data/input-sheet.xlsx` は白紙のひな形。記入済みのものを絶対にここへ上書きしない**
 - **損益セグメントの斜めハッチは判読性を担保している。** 色覚多様性とダークモードでは
   色だけで区別できないため。色やハッチに触れるときは `dataviz` スキルの
   `scripts/validate_palette.js` で再検証する

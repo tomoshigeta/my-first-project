@@ -1,5 +1,10 @@
-# data/ に置いた本物の資産データは GitHub に上げない（このリポジトリは public）。
-# ひな形と説明書だけを追跡する。
+# 本物の資産データは GitHub に上げない（このリポジトリは public）。
+# 追跡するのは「白紙のひな形」と説明書だけ。
+# 記入済みのファイル（data/my-assets.json / data/my-assets.xlsx）は
+# 下の data/* に含まれるので、そのまま除外されます。
 data/*
+# JSON のひな形
 !data/template.json
+# Excel 入力シートの白紙のひな形
+!data/input-sheet.xlsx
 !data/README.md
