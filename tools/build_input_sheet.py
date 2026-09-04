@@ -214,8 +214,9 @@ ws["A1"] = "有価証券　（国内・海外 × 4種類 ＝ 8行で固定）"; 
 note(ws, 2, "持っていない種類は 0 のままにします（行は消しません。入れ忘れに気づけるようにするためです）。")
 note(ws, 3, "「その他」は暗号資産・金・銀などをまとめる欄です。金額はその通貨のままで入れます（円換算は自動）。")
 
-SEC_HEAD = ["地域", "種類", "通貨", "取得原価", "評価額", "補足（任意）", "含み損益", "円換算した評価額"]
-head_row(ws, 5, SEC_HEAD, [10, 12, 9, 15, 15, 22, 15, 17])
+SEC_HEAD = ["地域", "種類", "通貨", "取得原価", "評価額", "補足（任意）",
+            "含み損益", "円換算した評価額", "円換算した取得原価"]
+head_row(ws, 5, SEC_HEAD, [10, 12, 9, 15, 15, 22, 15, 17, 17])
 SEC_R0 = 6
 combos = [("国内", c, "JPY") for c in ("株", "債券", "投資信託", "その他")] + \
          [("海外", c, "USD") for c in ("株", "債券", "投資信託", "その他")]
@@ -231,13 +232,16 @@ for i, ((reg, cls, cur), (cost, mv, nt)) in enumerate(zip(combos, sample)):
     ws.cell(row=r, column=5, value=mv)
     ws.cell(row=r, column=6, value=nt)
     ws.cell(row=r, column=7, value=f"=E{r}-D{r}")
-    ws.cell(row=r, column=8, value=f"=ROUND(E{r}*IFERROR(INDEX({RATE_TBL.replace('$A$10:$B$13','$B$10:$B$13')},MATCH(C{r},{RATE_TBL.replace('$A$10:$B$13','$A$10:$A$13')},0)),0),0)")
+    rate_of = f"IFERROR(INDEX('基本情報'!$B$10:$B$13,MATCH(C{r},'基本情報'!$A$10:$A$13,0)),0)"
+    ws.cell(row=r, column=8, value=f"=ROUND(E{r}*{rate_of},0)")   # 円換算した評価額
+    ws.cell(row=r, column=9, value=f"=ROUND(D{r}*{rate_of},0)")   # 円換算した取得原価
 SEC_R1 = SEC_R0 + 7
-style_block(ws, SEC_R0, SEC_R1, 8, {1, 2, 7, 8}, {4: YEN, 5: YEN, 7: YEN, 8: YEN})
+style_block(ws, SEC_R0, SEC_R1, 9, {1, 2, 7, 8, 9}, {4: YEN, 5: YEN, 7: YEN, 8: YEN, 9: YEN})
 tot = SEC_R1 + 1
 ws.cell(row=tot, column=1, value="合計").font = H2
 for col, f in ((4, f"=SUM(D{SEC_R0}:D{SEC_R1})"), (5, f"=SUM(E{SEC_R0}:E{SEC_R1})"),
-               (7, f"=SUM(G{SEC_R0}:G{SEC_R1})"), (8, f"=SUM(H{SEC_R0}:H{SEC_R1})")):
+               (7, f"=SUM(G{SEC_R0}:G{SEC_R1})"), (8, f"=SUM(H{SEC_R0}:H{SEC_R1})"),
+               (9, f"=SUM(I{SEC_R0}:I{SEC_R1})")):
     c = ws.cell(row=tot, column=col, value=f)
     c.font, c.number_format, c.border = H2, YEN, BOX
 note(ws, tot, "※ 通貨が違うので、この行の取得原価と評価額の合計は目安です）", col=6)
@@ -302,8 +306,8 @@ def re_sum_ex(col):
 ws["A4"] = "金融資産"; ws["A4"].font = H2
 items = [
     ("有価証券（評価額・円）", f"='有価証券'!H{SEC_R1 + 1}", YEN, "円換算した評価額の合計"),
-    ("　うち含み損益",        f"='有価証券'!H{SEC_R1 + 1}-SUMPRODUCT('有価証券'!D{SEC_R0}:D{SEC_R1},"
-                              f"IFERROR(INDEX('基本情報'!$B$10:$B$13,MATCH('有価証券'!C{SEC_R0}:C{SEC_R1},'基本情報'!$A$10:$A$13,0)),0))", YEN, "評価額 − 取得原価"),
+    ("　うち含み損益",        f"='有価証券'!H{SEC_R1 + 1}-'有価証券'!I{SEC_R1 + 1}", YEN,
+                              "円換算した評価額 − 円換算した取得原価"),
     ("預貯金",                f"='預貯金'!D{DEP_R1 + 1}", YEN, "円換算した残高の合計"),
     ("金融資産合計",          f"='有価証券'!H{SEC_R1 + 1}+'預貯金'!D{DEP_R1 + 1}", YEN, "有価証券 ＋ 預貯金（不動産は含めません）"),
 ]

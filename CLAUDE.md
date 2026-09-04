@@ -26,6 +26,10 @@
 - **入力は Excel（`data/input-sheet.xlsx`）が下書き。** `tools/xlsx_to_json.py` で JSON に変換する。
   シートを直したら `tools/build_input_sheet.py` を実行して作り直し、変換ツールの列位置も合わせる。
   `tools/` は画面の動作に関係しない（外部依存ゼロの制約は `mock/` の話）
+- **`recalc.py`（LibreOffice）が通っても Excel で通るとは限らない。**
+  `INDEX(範囲, MATCH(範囲, ...))` のような配列渡しは LibreOffice では計算できるが、
+  本物の Excel では `#VALUE!` になる。実際に1度これで壊した。
+  数式は行ごとの計算に分け、配列を引数に渡さないこと
 - **本物の資産データを commit しない。** このリポジトリは public。`data/` は
   白紙のひな形（`template.json` / `input-sheet.xlsx`）と `README.md` 以外を
   `.gitignore` で除外してある。外さないこと。

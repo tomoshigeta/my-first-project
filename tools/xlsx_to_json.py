@@ -117,7 +117,8 @@ def convert(path):
                 "balance": balance,
                 "cumulativeRepaid": principal - balance,
                 "rate": num(ws.cell(row=r, column=10).value, f"{w} の金利", allow_blank=True),
-                "termYears": num(ws.cell(row=r, column=11).value, f"{w} の借入期間", allow_blank=True),
+                # 画面にそのまま出る欄なので丸める（323か月 ÷ 12 = 26.9166… のような値対策）
+                "termYears": round(num(ws.cell(row=r, column=11).value, f"{w} の借入期間", allow_blank=True), 1),
                 "monthlyRepayment": num(ws.cell(row=r, column=12).value, f"{w} の毎月の返済額", allow_blank=True),
             },
             "monthly": {
