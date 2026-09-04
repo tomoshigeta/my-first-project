@@ -176,31 +176,36 @@ ws["A1"] = "不動産　（1行に1つの物件）"; ws["A1"].font = TITLE
 note(ws, 2, "灰色の「総投資額」「累計返済額」「固定資産税(月)」「月次収支」は自動で計算されます。")
 
 RE_HEAD = ["物件名", "住所", "広さ(㎡)", "階数", "築年数",
-           "自己資金", "当初借入額", "残債", "借入先", "金利(年%)", "借入期間(年)", "毎月の返済額",
+           "自己資金", "当初借入額", "残債", "借入先", "金利(年%)",
+           "借入期間(当初)\n年", "借入期間(当初)\nか月", "毎月の返済額",
            "家賃収入(月)", "管理費(月)", "修繕積立金(月)", "固定資産税(年額)",
-           "総投資額", "累計返済額", "固定資産税(月)", "月次収支"]
-RE_W = [16, 24, 9, 12, 8, 13, 13, 13, 14, 10, 11, 13, 13, 12, 13, 15, 14, 13, 14, 13]
+           "総投資額", "累計返済額", "固定資産税(月)", "月次収支", "借入期間 合計(か月)"]
+RE_W = [16, 24, 9, 12, 8, 13, 13, 13, 14, 10, 11, 11, 13, 13, 12, 13, 15, 14, 13, 14, 13, 15]
 head_row(ws, 4, RE_HEAD, RE_W)
 RE_R0, RE_R1 = 5, 14                      # 5 = 見本、6..14 = 入力
 ws.cell(row=RE_R0, column=1, value="（例）物件A")
-for col, val in zip(range(2, 17),
+for col, val in zip(range(2, 18),
                     ["東京都港区白金台", 45.5, "3 / 10 階", 15,
-                     10000000, 40000000, 35500000, "A銀行", 1.8, 35, 128000,
+                     10000000, 40000000, 35500000, "A銀行", 1.8, 26, 11, 128000,
                      180000, 12000, 8000, 108000]):
     ws.cell(row=RE_R0, column=col, value=val)
 for r in range(RE_R0, RE_R1 + 1):
-    ws.cell(row=r, column=17, value=f"=F{r}+G{r}")                       # 総投資額
-    ws.cell(row=r, column=18, value=f"=G{r}-H{r}")                       # 累計返済額
-    ws.cell(row=r, column=19, value=f"=ROUND(P{r}/12,0)")                # 固定資産税(月)
-    ws.cell(row=r, column=20, value=f"=M{r}-L{r}-N{r}-O{r}-S{r}")        # 月次収支
-RE_FMT = {3: NUM1, 6: YEN, 7: YEN, 8: YEN, 10: RATE, 12: YEN,
-          13: YEN, 14: YEN, 15: YEN, 16: YEN, 17: YEN, 18: YEN, 19: YEN, 20: YEN}
-style_block(ws, RE_R0, RE_R1, 20, {17, 18, 19, 20}, RE_FMT, example_row=RE_R0)
-ws.cell(row=RE_R0, column=17).font = EX; ws.cell(row=RE_R0, column=17).fill = FILL_EX
-for c in (18, 19, 20):
+    ws.cell(row=r, column=18, value=f"=F{r}+G{r}")                       # 総投資額
+    ws.cell(row=r, column=19, value=f"=G{r}-H{r}")                       # 累計返済額
+    ws.cell(row=r, column=20, value=f"=ROUND(Q{r}/12,0)")                # 固定資産税(月)
+    ws.cell(row=r, column=21, value=f"=N{r}-M{r}-O{r}-P{r}-T{r}")        # 月次収支
+    ws.cell(row=r, column=22, value=f"=K{r}*12+L{r}")                    # 借入期間 合計(か月)
+RE_FMT = {3: NUM1, 6: YEN, 7: YEN, 8: YEN, 10: RATE, 13: YEN,
+          14: YEN, 15: YEN, 16: YEN, 17: YEN, 18: YEN, 19: YEN, 20: YEN, 21: YEN}
+style_block(ws, RE_R0, RE_R1, 22, {18, 19, 20, 21, 22}, RE_FMT, example_row=RE_R0)
+for c in (18, 19, 20, 21, 22):
     ws.cell(row=RE_R0, column=c).font = EX; ws.cell(row=RE_R0, column=c).fill = FILL_EX
-ws.cell(row=4, column=16).comment = Comment(
+ws.cell(row=4, column=17).comment = Comment(
     "年額を入れてください。1年ぶんです。右の「固定資産税(月)」は 12 で割った平均月額で、自動計算です。", "入力シート", width=280, height=90)
+ws.cell(row=4, column=11).comment = Comment(
+    "契約したときの期間です（残りの期間ではありません）。26年11か月なら「年」に 26、「か月」に 11。"
+    "ちょうど20年なら 20 と 0。返済回数しか分からないときは 12 で割った商と余りを入れてください。",
+    "入力シート", width=300, height=110)
 ws.cell(row=4, column=7).comment = Comment(
     "借りたときの金額です。「残債」は今あといくら残っているか。差額が「累計返済額」として自動で出ます。", "入力シート", width=280, height=90)
 note(ws, RE_R1 + 2, "※ 行が足りないときは、最終行（14行目）をコピーして下に貼り付けてください。数式も一緒に増えます。")
@@ -272,6 +277,46 @@ c = ws.cell(row=DEP_R1 + 1, column=4, value=f"=SUM(D{DEP_R0 + 1}:D{DEP_R1})")
 c.font, c.number_format, c.border = H2, YEN, BOX
 
 # ============================================================
+# 保険
+# ============================================================
+ws = wb.create_sheet("保険")
+ws.sheet_view.showGridLines = False
+ws["A1"] = "保険　（1行に1つの契約）"; ws["A1"].font = TITLE
+note(ws, 2, "貯蓄性のある保険（終身・養老・個人年金など）を書きます。掛け捨ての医療保険などは書きません。")
+note(ws, 3, "評価額には「解約返戻金」（今解約したら戻る額）を入れます。毎年届く「ご契約内容のお知らせ」か保険会社のマイページで分かります。")
+note(ws, 4, "※ 死亡保険金額は参考です。今使えるお金ではないので、資産の合計には足しません。")
+head_row(ws, 6, ["保険名", "保険会社", "通貨", "払込保険料 累計", "解約返戻金",
+                 "死亡保険金額\n(参考・資産に含めず)", "評価日", "補足（任意）",
+                 "含み損益", "円換算した解約返戻金", "円換算した払込保険料"],
+         [26, 16, 9, 16, 16, 17, 13, 22, 15, 18, 18])
+INS_R0, INS_R1 = 7, 14
+for col, val in zip(range(1, 9),
+                    ["（例）変額終身保険", "○○生命", "JPY", 3000000, 2600000,
+                     10000000, "2026-03-31", "解約返戻金は年1回の通知の数字"]):
+    ws.cell(row=INS_R0, column=col, value=val)
+for r in range(INS_R0, INS_R1 + 1):
+    rate_of = f"IFERROR(INDEX('基本情報'!$B$10:$B$13,MATCH(C{r},'基本情報'!$A$10:$A$13,0)),0)"
+    ws.cell(row=r, column=9,  value=f'=IF(A{r}="","",E{r}-D{r})')
+    ws.cell(row=r, column=10, value=f'=IF(A{r}="","",ROUND(E{r}*{rate_of},0))')
+    ws.cell(row=r, column=11, value=f'=IF(A{r}="","",ROUND(D{r}*{rate_of},0))')
+style_block(ws, INS_R0, INS_R1, 11, {9, 10, 11},
+            {4: YEN, 5: YEN, 6: YEN, 9: YEN, 10: YEN, 11: YEN}, example_row=INS_R0)
+ws.cell(row=INS_R1 + 1, column=1, value="合計（見本行は数えません）").font = H2
+for col in (10, 11):
+    c = ws.cell(row=INS_R1 + 1, column=col,
+                value=f"=SUM({get_column_letter(col)}{INS_R0 + 1}:{get_column_letter(col)}{INS_R1})")
+    c.font, c.number_format, c.border = H2, YEN, BOX
+dv3 = DataValidation(type="list", formula1='"JPY,USD,EUR"', allow_blank=True)
+ws.add_data_validation(dv3); dv3.add(f"C{INS_R0}:C{INS_R1}")
+ws.cell(row=6, column=4).comment = Comment(
+    "これまでに払った保険料の合計です。取得原価にあたります。", "入力シート", width=260, height=70)
+ws.cell(row=6, column=7).comment = Comment(
+    "解約返戻金が「いつ時点」の数字かを入れます。基準日とズレていて構いません（画面にそのまま出ます）。",
+    "入力シート", width=280, height=90)
+note(ws, INS_R1 + 3, "※ 解約返戻金がまだ分からないときは、払込保険料累計と同じ額を入れ、"
+                     "「補足」に「解約返戻金 未確認（暫定）」と書いてください。含み損益は ±0 になります。")
+
+# ============================================================
 # その他の借入
 # ============================================================
 ws = wb.create_sheet("その他の借入")
@@ -304,12 +349,21 @@ def re_sum_ex(col):
     return f"SUM('不動産'!${col}${RE_R0 + 1}:${col}${RE_R1})"
 
 ws["A4"] = "金融資産"; ws["A4"].font = H2
+SEC_V = f"'有価証券'!H{SEC_R1 + 1}"          # 円換算した評価額 合計
+SEC_C = f"'有価証券'!I{SEC_R1 + 1}"          # 円換算した取得原価 合計
+INS_V = f"'保険'!J{INS_R1 + 1}"              # 円換算した解約返戻金 合計
+INS_C = f"'保険'!K{INS_R1 + 1}"              # 円換算した払込保険料 合計
+DEP_V = f"'預貯金'!D{DEP_R1 + 1}"
+
 items = [
-    ("有価証券（評価額・円）", f"='有価証券'!H{SEC_R1 + 1}", YEN, "円換算した評価額の合計"),
-    ("　うち含み損益",        f"='有価証券'!H{SEC_R1 + 1}-'有価証券'!I{SEC_R1 + 1}", YEN,
-                              "円換算した評価額 − 円換算した取得原価"),
-    ("預貯金",                f"='預貯金'!D{DEP_R1 + 1}", YEN, "円換算した残高の合計"),
-    ("金融資産合計",          f"='有価証券'!H{SEC_R1 + 1}+'預貯金'!D{DEP_R1 + 1}", YEN, "有価証券 ＋ 預貯金（不動産は含めません）"),
+    ("有価証券（評価額・円）", f"={SEC_V}", YEN, "円換算した評価額の合計"),
+    ("　うち含み損益",        f"={SEC_V}-{SEC_C}", YEN, "円換算した評価額 − 円換算した取得原価"),
+    ("保険（解約返戻金・円）", f"={INS_V}", YEN, "死亡保険金額は含めません"),
+    ("　うち含み損益",        f"={INS_V}-{INS_C}", YEN, "解約返戻金 − 払込保険料（保障の対価を含む）"),
+    ("預貯金",                f"={DEP_V}", YEN, "円換算した残高の合計"),
+    ("金融資産合計",          f"={SEC_V}+{INS_V}+{DEP_V}", YEN,
+                              "有価証券 ＋ 保険 ＋ 預貯金（不動産は含めません）"),
+    ("　うち含み損益",        f"={SEC_V}+{INS_V}-{SEC_C}-{INS_C}", YEN, "画面のサマリーに出る数字"),
 ]
 r = 5
 for label, formula, fmt, desc in items:
@@ -324,13 +378,13 @@ r += 1
 ws.cell(row=r, column=1, value="不動産").font = H2
 r += 1
 re_items = [
-    ("総投資額",   f"={re_sum_ex('Q')}", YEN, "自己資金 ＋ 当初借入額"),
+    ("総投資額",   f"={re_sum_ex('R')}", YEN, "自己資金 ＋ 当初借入額"),
     ("自己資金累計", f"={re_sum_ex('F')}", YEN, ""),
     ("借入総額",   f"={re_sum_ex('G')}", YEN, "当初の借入額の合計"),
     ("残債合計",   f"={re_sum_ex('H')}", YEN, ""),
-    ("累計返済額", f"={re_sum_ex('R')}", YEN, "借入総額 − 残債合計"),
-    ("返済進捗率", f"=IFERROR({re_sum_ex('R')}/{re_sum_ex('G')},0)", PCT1, "累計返済額 ÷ 借入総額"),
-    ("月次収支の合計", f"={re_sum_ex('T')}", YEN, "家賃 − 返済 − 経費。マイナスなら持ち出しです"),
+    ("累計返済額", f"={re_sum_ex('S')}", YEN, "借入総額 − 残債合計"),
+    ("返済進捗率", f"=IFERROR({re_sum_ex('S')}/{re_sum_ex('G')},0)", PCT1, "累計返済額 ÷ 借入総額"),
+    ("月次収支の合計", f"={re_sum_ex('U')}", YEN, "家賃 − 返済 − 経費。マイナスなら持ち出しです"),
 ]
 for label, formula, fmt, desc in re_items:
     ws.cell(row=r, column=1, value=label).font = BODY
@@ -376,6 +430,14 @@ checks = [
     ("氏名と基準日が入っている",
      '=IF(OR(\'基本情報\'!B4="",\'基本情報\'!B5=""),"要確認","OK")',
      "どちらも必須です"),
+    ("借入期間の「か月」が0〜11か",
+     f'=IF(SUMPRODUCT((\'不動産\'!A{RE_R0+1}:A{RE_R1}<>"")*((\'不動産\'!L{RE_R0+1}:L{RE_R1}<0)+'
+     f'(\'不動産\'!L{RE_R0+1}:L{RE_R1}>11)))>0,"要確認","OK")',
+     "12か月以上は「年」の側に繰り上げてください"),
+    ("保険にレートの無い通貨がある",
+     f'=IF(SUMPRODUCT((\'保険\'!A{INS_R0+1}:A{INS_R1}<>"")*'
+     f'ISERROR(MATCH(\'保険\'!C{INS_R0+1}:C{INS_R1},\'基本情報\'!$A$10:$A$13,0)))>0,"要確認","OK")',
+     "「基本情報」タブの為替レートに、使った通貨を足してください"),
 ]
 for label, formula, desc in checks:
     ws.cell(row=r, column=1, value=label).font = BODY

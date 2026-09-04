@@ -31,6 +31,9 @@ JSON の書き方と手順は [`../data/README.md`](../data/README.md)、ひな�
 - 固定資産税は **年額 ÷ 12** の平均月額（`propertyTaxMonthly`）
 - `securities` のみ元通貨で保持し、`rates` で円換算
 - `totalInvestment = ownFunds + loan.principal`
+- 借入期間は `loan.termMonths`（月数）。表示のときだけ「26年11か月」に割る
+- 保険は `insurance`。評価額は解約返戻金、取得原価は払込保険料累計。
+  `deathBenefit` は参考表示のみで、どの合計にも足さない
 - `loan.principal = loan.balance + loan.cumulativeRepaid`
 
 読み込み時に `app.js` の `validateData` がこの不変条件と項目の型を検査し、
@@ -95,6 +98,7 @@ JSON の書き方と手順は [`../data/README.md`](../data/README.md)、ひな�
 | セクション | 棒 | トラック全体＝100% |
 |---|---|---|
 | 有価証券 | 元本＋含み損益 | 最大クラスの `max(取得原価, 評価額)` |
+| 保険 | 払込保険料＋含み損益 | 最大の契約の `max(払込保険料, 解約返戻金)` |
 | 預貯金 | 残高 | 預貯金合計 → **棒の長さがそのまま構成比** |
 | 負債 | 返済済み＋残債 | **その行の当初借入額**（どの行も全長が同じ） |
 

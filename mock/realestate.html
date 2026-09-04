@@ -111,7 +111,7 @@
     ["築年数",   p => p.ageYears + " 年", 1],
     ["金融機関", p => p.loan.lender],
     ["借入額",   p => A.plain(p.loan.principal), 1],
-    ["期間",     p => p.loan.termYears + " 年", 1],
+    ["期間",     p => A.fmtTerm(p.loan.termMonths), 1],
     ["金利",     p => p.loan.rate.toFixed(1) + " %", 1],
     ["残債",     p => A.plain(p.loan.balance), 1]
   ];

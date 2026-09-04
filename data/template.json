@@ -1,11 +1,13 @@
 {
-  "formatVersion": 1,
-
-  "owner": { "name": "山田 太郎" },
+  "formatVersion": 2,
+  "owner": {
+    "name": "山田 太郎"
+  },
   "asOf": "2026-09-01",
-
-  "rates": { "JPY": 1, "USD": 155.2 },
-
+  "rates": {
+    "JPY": 1,
+    "USD": 155.2
+  },
   "realEstate": [
     {
       "name": "物件A",
@@ -21,7 +23,7 @@
         "balance": 35500000,
         "cumulativeRepaid": 4500000,
         "rate": 1.8,
-        "termYears": 35,
+        "termMonths": 420,
         "monthlyRepayment": 128000
       },
       "monthly": {
@@ -45,7 +47,7 @@
         "balance": 58000000,
         "cumulativeRepaid": 2000000,
         "rate": 0.8,
-        "termYears": 30,
+        "termMonths": 360,
         "monthlyRepayment": 190000
       },
       "monthly": {
@@ -58,7 +60,7 @@
     {
       "name": "物件C",
       "address": "神奈川県横浜市西区",
-      "areaSqm": 85.0,
+      "areaSqm": 85,
       "floor": "2 / 5 階",
       "ageYears": 22,
       "totalInvestment": 25000000,
@@ -69,7 +71,7 @@
         "balance": 11500000,
         "cumulativeRepaid": 8500000,
         "rate": 1.2,
-        "termYears": 20,
+        "termMonths": 323,
         "monthlyRepayment": 105000
       },
       "monthly": {
@@ -80,26 +82,122 @@
       }
     }
   ],
-
   "securities": [
-    { "region": "domestic", "assetClass": "株",       "currency": "JPY", "cost": 2000000, "marketValue": 5000000 },
-    { "region": "domestic", "assetClass": "債券",     "currency": "JPY", "cost": 2700000, "marketValue": 2500000 },
-    { "region": "domestic", "assetClass": "投資信託", "currency": "JPY", "cost": 1300000, "marketValue": 1500000 },
-    { "region": "domestic", "assetClass": "その他",   "currency": "JPY", "cost":  800000, "marketValue": 1200000, "note": "金地金" },
-    { "region": "overseas", "assetClass": "株",       "currency": "USD", "cost":   20000, "marketValue":   32000 },
-    { "region": "overseas", "assetClass": "債券",     "currency": "USD", "cost":   18000, "marketValue":   16000 },
-    { "region": "overseas", "assetClass": "投資信託", "currency": "USD", "cost":    8000, "marketValue":    9500 },
-    { "region": "overseas", "assetClass": "その他",   "currency": "USD", "cost":    5000, "marketValue":   11000, "note": "暗号資産" }
+    {
+      "region": "domestic",
+      "assetClass": "株",
+      "currency": "JPY",
+      "cost": 2000000,
+      "marketValue": 5000000
+    },
+    {
+      "region": "domestic",
+      "assetClass": "債券",
+      "currency": "JPY",
+      "cost": 2700000,
+      "marketValue": 2500000
+    },
+    {
+      "region": "domestic",
+      "assetClass": "投資信託",
+      "currency": "JPY",
+      "cost": 1300000,
+      "marketValue": 1500000
+    },
+    {
+      "region": "domestic",
+      "assetClass": "その他",
+      "currency": "JPY",
+      "cost": 800000,
+      "marketValue": 1200000,
+      "note": "金地金"
+    },
+    {
+      "region": "overseas",
+      "assetClass": "株",
+      "currency": "USD",
+      "cost": 20000,
+      "marketValue": 32000
+    },
+    {
+      "region": "overseas",
+      "assetClass": "債券",
+      "currency": "USD",
+      "cost": 18000,
+      "marketValue": 16000
+    },
+    {
+      "region": "overseas",
+      "assetClass": "投資信託",
+      "currency": "USD",
+      "cost": 8000,
+      "marketValue": 9500
+    },
+    {
+      "region": "overseas",
+      "assetClass": "その他",
+      "currency": "USD",
+      "cost": 5000,
+      "marketValue": 11000,
+      "note": "暗号資産"
+    }
   ],
-
+  "insurance": [
+    {
+      "name": "変額終身保険",
+      "insurer": "○○生命",
+      "currency": "JPY",
+      "premiumPaid": 3000000,
+      "surrenderValue": 2600000,
+      "deathBenefit": 10000000,
+      "valuedAt": "2026-03-31"
+    },
+    {
+      "name": "外貨建終身保険",
+      "insurer": "△△生命",
+      "currency": "USD",
+      "premiumPaid": 30000,
+      "surrenderValue": 34000,
+      "deathBenefit": 100000,
+      "valuedAt": "2026-03-31",
+      "note": "通貨選択型"
+    }
+  ],
   "deposits": [
-    { "bank": "A銀行", "currency": "JPY", "amount":  2000000 },
-    { "bank": "B銀行", "currency": "JPY", "amount":  3000000 },
-    { "bank": "C銀行", "currency": "JPY", "amount": 13000000 }
+    {
+      "bank": "A銀行",
+      "currency": "JPY",
+      "amount": 2000000
+    },
+    {
+      "bank": "B銀行",
+      "currency": "JPY",
+      "amount": 3000000
+    },
+    {
+      "bank": "C銀行",
+      "currency": "JPY",
+      "amount": 13000000
+    }
   ],
-
   "otherLoans": [
-    { "name": "自動車ローン", "type": "車",     "lender": "D銀行", "principal": 3000000, "balance": 1800000, "rate": 2.5, "monthlyRepayment": 45000 },
-    { "name": "多目的ローン", "type": "多目的", "lender": "E銀行", "principal": 5000000, "balance": 3200000, "rate": 3.2, "monthlyRepayment": 62000 }
+    {
+      "name": "自動車ローン",
+      "type": "車",
+      "lender": "D銀行",
+      "principal": 3000000,
+      "balance": 1800000,
+      "rate": 2.5,
+      "monthlyRepayment": 45000
+    },
+    {
+      "name": "多目的ローン",
+      "type": "多目的",
+      "lender": "E銀行",
+      "principal": 5000000,
+      "balance": 3200000,
+      "rate": 3.2,
+      "monthlyRepayment": 62000
+    }
   ]
 }

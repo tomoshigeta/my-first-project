@@ -44,7 +44,7 @@
       '<div class="kpi-label">金融資産合計</div>' +
       '<div class="kpi-scope">有価証券＋預貯金（不動産を含まない）</div>' +
       '<div class="kpi-value num">' + A.yen(A.FINANCIAL_ASSETS) + '</div>' +
-      '<div class="kpi-sub">うち含み損益 ' + A.plHTML(A.SEC_PL) + '</div>' +
+      '<div class="kpi-sub">うち含み損益 ' + A.plHTML(A.FIN_PL) + '</div>' +
     '</div>' +
     '<div class="kpi lg">' +
       '<div class="kpi-label">総負債</div>' +
@@ -85,6 +85,11 @@
       '<tr><td>有価証券（評価額）</td><td class="n num">' + A.yen(A.SEC_VALUE) + '</td></tr>' +
       '<tr><td>　取得原価</td><td class="n num">' + A.yen(A.SEC_COST) + '</td></tr>' +
       '<tr><td>　含み損益</td><td class="n">' + A.plHTML(A.SEC_PL) + '</td></tr>' +
+      (A.INS.length
+        ? '<tr><td>保険（解約返戻金）</td><td class="n num">' + A.yen(A.INS_VALUE) + '</td></tr>' +
+          '<tr><td>　払込保険料</td><td class="n num">' + A.yen(A.INS_COST) + '</td></tr>' +
+          '<tr><td>　含み損益</td><td class="n">' + A.plHTML(A.INS_PL) + '</td></tr>'
+        : '') +
       '<tr><td>預貯金</td><td class="n num">' + A.yen(A.DEPOSITS) + '</td></tr>' +
       '<tr class="total-row"><td>金融資産合計</td><td class="n num">' +
         A.yen(A.FINANCIAL_ASSETS) + '</td></tr>' +
@@ -92,6 +97,12 @@
     '<div class="callout" style="margin-top:18px">' +
       '含み損益は<b>文字の色</b>だけで表します（赤＝益／青＝損）。' +
       '棒の塗りはカテゴリを表すため、損益には使いません。' +
+      (A.INS.length
+        ? '<br><br>保険の含み損益は<b>解約返戻金 − 払込保険料</b>です。' +
+          '払った保険料には<b>保障の対価</b>が含まれるため、' +
+          'これは投資の損益とは意味が違います。' +
+          '死亡保険金額は今使える金額ではないので、資産に加えていません。'
+        : '') +
     '</div>';
 
   A.initTooltip();

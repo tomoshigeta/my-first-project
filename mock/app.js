@@ -49,7 +49,12 @@
       const okBa = need(L, "balance", "number", wl);
       const okRe = need(L, "cumulativeRepaid", "number", wl);
       need(L, "rate", "number", wl);
-      need(L, "termYears", "number", wl);
+      if (L.termYears !== undefined && L.termMonths === undefined) {
+        errs.push(w + ": loan.termYears は loan.termMonths（月数）に変わりました" +
+                  "（形式2）。Excel の入力シートから作り直してください");
+      } else {
+        need(L, "termMonths", "number", wl);
+      }
       need(L, "monthlyRepayment", "number", wl);
       if (okPr && okBa && okRe && Math.round(L.balance + L.cumulativeRepaid) !== Math.round(L.principal))
         errs.push(w + ": loan.principal（" + fmt(L.principal) + "）が balance + cumulativeRepaid（" +
@@ -77,6 +82,25 @@
       need(x, "amount", "number", w);
       if (!rateOK(x && x.currency)) rateErr(w, x && x.currency);
     });
+    /* 保険は無くてもよい（持っていない人がいるため）。あれば中身を検査する。 */
+    if (d.insurance !== undefined) {
+      if (!Array.isArray(d.insurance)) {
+        errs.push("一番外側の「insurance」が [ ] の形になっていません");
+      } else {
+        d.insurance.forEach((x, i) => {
+          const w = "insurance の " + (i + 1) + " 件目" +
+                    (x && isStr(x.name) ? "（" + x.name + "）" : "");
+          need(x, "name", "string", w);
+          need(x, "premiumPaid", "number", w);
+          need(x, "surrenderValue", "number", w);
+          if (!rateOK(x && x.currency)) rateErr(w, x && x.currency);
+          if (x && x.deathBenefit !== undefined && !isNum(x.deathBenefit)) {
+            errs.push(w + " の deathBenefit が数字ではありません");
+          }
+        });
+      }
+    }
+
     d.otherLoans.forEach((l, i) => {
       const w = "otherLoans の " + (i + 1) + " 件目" + (l && isStr(l.name) ? "（" + l.name + "）" : "");
       need(l, "name", "string", w);
@@ -196,6 +220,17 @@
 
   const pct = (a, b) => b === 0 ? "0.0%" : (a / b * 100).toFixed(1) + "%";
 
+  /* 借入期間は月数で持ち、読むときだけ年と月に割る（323 → 26年11か月）。
+     小数の年で持つと端数が何か月なのか復元できないため。 */
+  function fmtTerm(months) {
+    const m = Math.round(months);
+    if (!isFinite(m) || m <= 0) return "\u2014";
+    const y = Math.floor(m / 12), rest = m % 12;
+    if (y && rest) return y + "年" + rest + "か月";
+    if (y) return y + "年";
+    return rest + "か月";
+  }
+
   /* 損益率も日本式で表す（+x.x% / ▲x.x%）。文字色は損益色。 */
   function plPctHTML(n, base) {
     if (!base) return '<span class="num">\u2014</span>';
@@ -252,13 +287,34 @@
     });
   });
 
+  /* 保険。評価額は解約返戻金、取得原価は払込保険料累計。
+     死亡保険金額は「今使える金額」ではないので、資産の合計には一切足さない。 */
+  const INS = (D.insurance || []).map(x => {
+    const r = rate(x.currency);
+    return Object.assign({}, x, {
+      costJPY: x.premiumPaid * r,
+      valueJPY: x.surrenderValue * r,
+      plJPY: (x.surrenderValue - x.premiumPaid) * r
+    });
+  });
+
   const SEC_VALUE = sum(SEC, s => s.valueJPY);
   const SEC_COST  = sum(SEC, s => s.costJPY);
   const SEC_PL    = SEC_VALUE - SEC_COST;
   const DEPOSITS  = sum(D.deposits, d => d.amount * rate(d.currency));
 
-  /* 金融資産 = 有価証券評価額 + 預貯金（不動産を含まない / Q24） */
-  const FINANCIAL_ASSETS = SEC_VALUE + DEPOSITS;
+  const INS_VALUE = sum(INS, x => x.valueJPY);
+  const INS_COST  = sum(INS, x => x.costJPY);
+  const INS_PL    = INS_VALUE - INS_COST;
+
+  /* 金融資産 = 有価証券評価額 + 預貯金 + 保険の解約返戻金（不動産を含まない / Q24）。
+     保険は当初 有価証券の「その他」に混ぜていたが、現物資産という定義に合わず
+     国内/海外の軸も意味をなさないため独立させた。合計に入る点は変わらない。 */
+  const FINANCIAL_ASSETS = SEC_VALUE + DEPOSITS + INS_VALUE;
+
+  /* 金融資産全体の含み損益。合計と範囲をそろえるため保険も含める。
+     保険の損益には保障の対価が混ざっている（画面で注記する）。 */
+  const FIN_PL = SEC_PL + INS_PL;
 
   /* 総負債 = 不動産ローン残債 + その他ローン残債（Q24） */
   const OTHER_DEBT = sum(D.otherLoans, l => l.balance);
@@ -369,8 +425,9 @@
 
   window.APP = {
     D, SOURCE, validateData, parseJSONText, RE, SEC, SEC_VALUE, SEC_COST, SEC_PL, DEPOSITS,
+    INS, INS_VALUE, INS_COST, INS_PL, FIN_PL,
     FINANCIAL_ASSETS, OTHER_DEBT, TOTAL_DEBT, CF_TOTAL,
-    yen, plain, pl, plHTML, plPctHTML, pct, sum, cashflow,
+    yen, plain, pl, plHTML, plPctHTML, pct, sum, cashflow, fmtTerm,
     stackedBar, valueBar, plBar, sidebar, initTooltip
   };
 })();

@@ -32,7 +32,7 @@ window.ASSET_DATA = {
       loan: {
         lender: "A銀行", principal: 40000000,
         balance: 35500000, cumulativeRepaid: 4500000,
-        rate: 1.8, termYears: 35, monthlyRepayment: 128000
+        rate: 1.8, termMonths: 420, monthlyRepayment: 128000
       },
       monthly: {
         rentIncome: 180000, managementFee: 12000,
@@ -48,7 +48,7 @@ window.ASSET_DATA = {
       loan: {
         lender: "B信用金庫", principal: 60000000,
         balance: 58000000, cumulativeRepaid: 2000000,
-        rate: 0.8, termYears: 30, monthlyRepayment: 190000
+        rate: 0.8, termMonths: 360, monthlyRepayment: 190000
       },
       monthly: {
         rentIncome: 240000, managementFee: 15000,
@@ -64,7 +64,7 @@ window.ASSET_DATA = {
       loan: {
         lender: "C銀行", principal: 20000000,
         balance: 11500000, cumulativeRepaid: 8500000,
-        rate: 1.2, termYears: 20, monthlyRepayment: 105000
+        rate: 1.2, termMonths: 323, monthlyRepayment: 105000
       },
       monthly: {
         rentIncome: 95000, managementFee: 8000,
@@ -88,6 +88,19 @@ window.ASSET_DATA = {
     { region: "overseas", assetClass: "投資信託", currency: "USD", cost:    8000, marketValue:    9500 },
     { region: "overseas", assetClass: "その他",   currency: "USD", cost:    5000, marketValue:   11000,
       note: "暗号資産" }
+  ],
+
+  /* ---------- 保険 ----------
+     評価額は解約返戻金（今解約したら戻る額）、取得原価は払込保険料累計。
+     deathBenefit（死亡保険金額）は参考表示のみで、資産の合計には足しません。
+     valuedAt は評価日。年1回の通知の日付になるため asOf とズレることがあります。 */
+  insurance: [
+    { name: "変額終身保険", insurer: "○○生命", currency: "JPY",
+      premiumPaid: 3000000, surrenderValue: 2600000,
+      deathBenefit: 10000000, valuedAt: "2026-03-31" },
+    { name: "外貨建終身保険", insurer: "△△生命", currency: "USD",
+      premiumPaid: 30000, surrenderValue: 34000,
+      deathBenefit: 100000, valuedAt: "2026-03-31", note: "通貨選択型" }
   ],
 
   /* ---------- 預貯金 ---------- */

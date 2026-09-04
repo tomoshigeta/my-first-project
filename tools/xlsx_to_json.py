@@ -64,7 +64,7 @@ def as_of(v):
 
 def convert(path):
     wb = load_workbook(path, data_only=True)
-    for name in ("基本情報", "不動産", "有価証券", "預貯金", "その他の借入"):
+    for name in ("基本情報", "不動産", "有価証券", "保険", "預貯金", "その他の借入"):
         if name not in wb.sheetnames:
             raise InputError(f"「{name}」タブが見つかりません")
 
@@ -80,12 +80,13 @@ def convert(path):
         raise InputError("基本情報の JPY のレートは 1 でなければなりません")
 
     data = {
-        "formatVersion": 1,
+        "formatVersion": 2,
         "owner": {"name": text(base["B4"].value, "基本情報の氏名")},
         "asOf": as_of(base["B5"].value),
         "rates": rates,
         "realEstate": [],
         "securities": [],
+        "insurance": [],
         "deposits": [],
         "otherLoans": [],
     }
@@ -102,7 +103,11 @@ def convert(path):
         balance = num(ws.cell(row=r, column=8).value, f"{w} の残債")
         if balance > principal:
             raise InputError(f"{w}: 残債が当初借入額より大きくなっています")
-        tax_year = num(ws.cell(row=r, column=16).value, f"{w} の固定資産税(年額)", allow_blank=True)
+        tax_year = num(ws.cell(row=r, column=17).value, f"{w} の固定資産税(年額)", allow_blank=True)
+        term_y = num(ws.cell(row=r, column=11).value, f"{w} の借入期間(年)", allow_blank=True)
+        term_m = num(ws.cell(row=r, column=12).value, f"{w} の借入期間(か月)", allow_blank=True)
+        if term_m < 0 or term_m > 11:
+            raise InputError(f"{w}: 借入期間の「か月」は 0〜11 です（12か月以上は「年」に繰り上げてください）")
         data["realEstate"].append({
             "name": str(name).strip(),
             "address": text(ws.cell(row=r, column=2).value, f"{w} の住所", allow_blank=True),
@@ -117,14 +122,14 @@ def convert(path):
                 "balance": balance,
                 "cumulativeRepaid": principal - balance,
                 "rate": num(ws.cell(row=r, column=10).value, f"{w} の金利", allow_blank=True),
-                # 画面にそのまま出る欄なので丸める（323か月 ÷ 12 = 26.9166… のような値対策）
-                "termYears": round(num(ws.cell(row=r, column=11).value, f"{w} の借入期間", allow_blank=True), 1),
-                "monthlyRepayment": num(ws.cell(row=r, column=12).value, f"{w} の毎月の返済額", allow_blank=True),
+                # 期間は月数で持つ。小数の年だと端数が何か月なのか復元できないため。
+                "termMonths": int(round(term_y * 12 + term_m)),
+                "monthlyRepayment": num(ws.cell(row=r, column=13).value, f"{w} の毎月の返済額", allow_blank=True),
             },
             "monthly": {
-                "rentIncome": num(ws.cell(row=r, column=13).value, f"{w} の家賃収入", allow_blank=True),
-                "managementFee": num(ws.cell(row=r, column=14).value, f"{w} の管理費", allow_blank=True),
-                "repairReserve": num(ws.cell(row=r, column=15).value, f"{w} の修繕積立金", allow_blank=True),
+                "rentIncome": num(ws.cell(row=r, column=14).value, f"{w} の家賃収入", allow_blank=True),
+                "managementFee": num(ws.cell(row=r, column=15).value, f"{w} の管理費", allow_blank=True),
+                "repairReserve": num(ws.cell(row=r, column=16).value, f"{w} の修繕積立金", allow_blank=True),
                 "propertyTaxMonthly": int(round(tax_year / 12)),
             },
         })
@@ -157,6 +162,36 @@ def convert(path):
     missing = {(r, c) for r in REGION_KEY.values() for c in CLASSES} - seen
     if missing:
         raise InputError(f"有価証券の8行がそろっていません: {sorted(missing)}")
+
+    # ---------- 保険 ----------
+    # 評価額は解約返戻金、取得原価は払込保険料累計。
+    # 死亡保険金額は参考として持つだけで、資産の合計には足さない（画面側も同じ）。
+    ws = wb["保険"]
+    for r in range(7, ws.max_row + 1):
+        name = ws.cell(row=r, column=1).value
+        if is_example(name):
+            continue
+        w = f"保険 {r}行目（{str(name).strip()}）"
+        cur = text(ws.cell(row=r, column=3).value, f"{w} の通貨").upper()
+        if cur not in rates:
+            raise InputError(f"{w}: 通貨「{cur}」のレートが基本情報にありません")
+        row = {
+            "name": str(name).strip(),
+            "insurer": text(ws.cell(row=r, column=2).value, f"{w} の保険会社", allow_blank=True),
+            "currency": cur,
+            "premiumPaid": num(ws.cell(row=r, column=4).value, f"{w} の払込保険料累計"),
+            "surrenderValue": num(ws.cell(row=r, column=5).value, f"{w} の解約返戻金"),
+        }
+        death = ws.cell(row=r, column=6).value
+        if death is not None and str(death).strip() != "":
+            row["deathBenefit"] = num(death, f"{w} の死亡保険金額")
+        valued = ws.cell(row=r, column=7).value
+        if valued is not None and str(valued).strip() != "":
+            row["valuedAt"] = as_of(valued)
+        note = ws.cell(row=r, column=8).value
+        if note and str(note).strip():
+            row["note"] = str(note).strip()
+        data["insurance"].append(row)
 
     # ---------- 預貯金 ----------
     ws = wb["預貯金"]
@@ -213,7 +248,8 @@ def main():
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")
     print(f"{dst} を書きました（不動産 {len(data['realEstate'])}件 / "
-          f"預貯金 {len(data['deposits'])}件 / その他の借入 {len(data['otherLoans'])}件）")
+          f"保険 {len(data['insurance'])}件 / 預貯金 {len(data['deposits'])}件 / "
+          f"その他の借入 {len(data['otherLoans'])}件）")
     return 0
 
 
